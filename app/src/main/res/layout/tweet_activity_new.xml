@@ -119,8 +119,17 @@
                             android:layout_height="wrap_content"
                             android:layout_width="wrap_content"
                             android:textColor="?dateColor"
+                            android:paddingBottom="5dp"
+                            android:gravity="end" />
+
+
+                        <com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView
+                            android:id="@+id/location"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
                             android:gravity="end"
-                            android:paddingBottom="14dp"/>
+                            android:paddingBottom="5dp"
+                            android:textColor="?dateColor" />
 
                     </LinearLayout>
 

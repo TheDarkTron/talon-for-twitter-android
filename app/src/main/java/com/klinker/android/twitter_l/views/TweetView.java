@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
@@ -378,6 +379,7 @@ public class TweetView {
                 viewTweet.putExtra("animated_gif", gifUrl);
                 viewTweet.putExtra("conversation", isConvo);
                 viewTweet.putExtra("video_duration", videoDuration);
+                viewTweet.putExtra("location", new Location("provider")); //TODO
 
                 TweetActivity.applyDragDismissBundle(context, viewTweet);
                 context.startActivity(viewTweet);

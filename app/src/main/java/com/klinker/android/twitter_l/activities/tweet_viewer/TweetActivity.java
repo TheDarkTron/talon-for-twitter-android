@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.core.app.NotificationManagerCompat;
@@ -169,6 +170,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public String gifVideo;
     public boolean isAConversation = false;
     public long videoDuration = -1;
+    public Location location;
 
     protected boolean fromLauncher = false;
     protected boolean fromNotification = false;
@@ -387,6 +389,9 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         gifVideo = from.getStringExtra("animated_gif");
         isAConversation = from.getBooleanExtra("conversation", false);
         videoDuration = from.getLongExtra("video_duration", -1);
+        location = new Location("provicer");
+        location.setLongitude(12);
+        location.setLatitude(11); //TODO
 
         try {
             users = from.getStringExtra("users").split("  ");
@@ -442,6 +447,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public FontPrefTextView nametv;
     public FontPrefTextView screennametv;
     public FontPrefTextView tweettv;
+    public FontPrefTextView locationtv;
 
     public void setUIElements(final View layout) {
 
@@ -455,6 +461,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         profilePic = (CircleImageView) layout.findViewById(R.id.profile_pic);
         image = (ImageView) layout.findViewById(R.id.image);
         timetv = (FontPrefTextView) layout.findViewById(R.id.time);
+        locationtv = (FontPrefTextView) layout.findViewById(R.id.location);
 
         tweettv.setTextSize(settings.textSize);
         screennametv.setTextSize(settings.textSize - 2);
@@ -462,6 +469,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         timetv.setTextSize(settings.textSize - 3);
         retweetertv.setTextSize(settings.textSize - 3);
         repliesTv.setTextSize(settings.textSize - 2);
+        locationtv.setTextSize(settings.textSize - 3);
 
         View.OnClickListener viewPro = new View.OnClickListener() {
             @Override
@@ -586,6 +594,8 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
                 replace = true;
             }
         }
+
+        locationtv.setText(location.getLatitude() + " " + location.getLongitude());
 
         try {
             tweettv.setText(replace ?
