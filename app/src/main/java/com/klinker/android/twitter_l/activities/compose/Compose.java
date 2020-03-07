@@ -77,6 +77,8 @@ import com.klinker.android.twitter_l.activities.GiphySearch;
 import com.klinker.android.twitter_l.data.ThemeColor;
 import com.klinker.android.twitter_l.data.sq_lite.HashtagDataSource;
 import com.klinker.android.twitter_l.data.sq_lite.QueuedDataSource;
+import com.klinker.android.twitter_l.services.event_cc.EventCC;
+import com.klinker.android.twitter_l.services.event_cc.JsonObjectReceiver;
 import com.klinker.android.twitter_l.utils.FingerprintDialog;
 import com.klinker.android.twitter_l.utils.NotificationChannelUtil;
 import com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView;
@@ -112,6 +114,11 @@ import com.yalantis.ucrop.UCrop;
 import net.ypresto.androidtranscoder.MediaTranscoder;
 import net.ypresto.androidtranscoder.format.AndroidStandardFormatStrategy;
 import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import javax.json.Json;
 
 import twitter4j.GeoLocation;
 import twitter4j.StatusUpdate;
@@ -170,6 +177,9 @@ public abstract class Compose extends Activity implements
     public int currentAccount;
 
     final Pattern p = Patterns.WEB_URL;
+
+    private final String TAG = "Add Event Fragment";
+    private EventCC eventCC;
 
     private int getCountFromString(String text) {
         if (AppSettings.isLimitedTweetCharLanguage()) {
@@ -405,6 +415,14 @@ public abstract class Compose extends Activity implements
                 f.set(reply, context.getResources().getColor(R.color.pressed_white));
             } catch (Exception ignored) {
             }
+        }
+
+        // initialize eventCC
+        try {
+            eventCC = new EventCC(this);
+        } catch (IOException e) {
+            Log.e(TAG, "Error creating EventCC");
+            e.printStackTrace();
         }
     }
 
@@ -1200,7 +1218,7 @@ public abstract class Compose extends Activity implements
 
     }
 
-    class UpdateTwitterStatus extends AsyncTask<String, String, Boolean> {
+    class UpdateTwitterStatus extends AsyncTask<String, String, Boolean> implements JsonObjectReceiver {
 
         String text;
         String status;
@@ -1322,7 +1340,7 @@ public abstract class Compose extends Activity implements
             } else {
                 boolean autoPopulateMetadata = false;
                 if (shouldReplaceTo(text)) {
-                    String replaceable = to.replaceAll("#[a-zA-Z]+ ", "");
+                    String replaceable = to.replaceAll("#[a-zA-Z]+ ", ""); // removes hashtags
                     if (!replaceable.equals(" ")) {
                         status = status.replaceAll(replaceable, "");
                         autoPopulateMetadata = true;
@@ -1345,8 +1363,9 @@ public abstract class Compose extends Activity implements
                     }
                 }
 
-                twitter4j.Status status = twitter.updateStatus(media);
+                twitter4j.Status status = twitter.updateStatus(media); // TODO: this is exactly what I want <----|
                 if (status != null) {
+                    eventCC.addEvent(this, status.getText(), String.valueOf(status.getId()), "", status.getCreatedAt(), status.getGeoLocation().getLatitude(), status.getGeoLocation().getLongitude());
                     notiId = status.getId();
                 }
             }
@@ -1386,6 +1405,8 @@ public abstract class Compose extends Activity implements
                 Twitter twitter = Utils.getTwitter(getApplicationContext(), settings);
                 Twitter twitter2 = Utils.getSecondTwitter(getApplicationContext());
 
+                // decides wether the tweet should be spit up, and how it should be split up.
+                // if remaining < 0 this means the tweet is too long
                 if (remaining < 0 && !pwiccer && !multiTweet) {
                     // twitlonger goes here
                     boolean isDone = false;
@@ -1696,6 +1717,14 @@ public abstract class Compose extends Activity implements
                 new UpdateTwitterStatus(text, remaining, true).execute(status);
             }
         }
+
+        @Override
+        public void display(JSONObject event) {
+            Log.i(TAG, "Added event: " + event);
+        }
+
+
+
     }
 
     public Bitmap decodeSampledBitmapFromResourceMemOpt(
