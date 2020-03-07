@@ -76,7 +76,9 @@ dependencies {
     implementation 'com.klinkerapps:simple_videoview:1.2.4'
     implementation 'com.klinkerapps:launcher-apis:1.1.0'
     implementation 'com.klinkerapps:android-transcoder:1.0.1'
-    implementation 'com.klinkerapps:article_viewer-glide3:0.26.0'
+    implementation ('com.klinkerapps:article_viewer-glide3:0.26.0') {
+        exclude module: 'gson'
+    }
     implementation 'com.klinkerapps:drag-dismiss-activity:1.7.0'
     implementation 'com.klinkerapps:floating-tutorial:1.1.0'
 
@@ -110,6 +112,10 @@ dependencies {
     implementation project(':searchview')
     implementation project(':shared_assets')
     implementation project(':lvl')
+
+    // event chain
+    implementation files('lib/fabric-sdk-java-1.4.8-jar-with-dependencies.jar')
+    implementation files('lib/fabric-gateway-java-1.4.3.jar')
 }
 
 apply plugin: 'com.google.gms.google-services'
