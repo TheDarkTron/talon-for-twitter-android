@@ -8,6 +8,8 @@ import org.hyperledger.fabric.gateway.Contract;
 import org.hyperledger.fabric.gateway.Gateway;
 import org.hyperledger.fabric.gateway.Network;
 import org.hyperledger.fabric.gateway.Wallet;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,7 +70,7 @@ public class EventCC {
     }
 
     /**
-     * Only for debug! Do not use in production!
+     * Only for debug! Do not use in production! Instead use {@link #queryEvents(JsonObjectReceiver, JSONObject)}
      *
      * @return A list of all Events in the BC
      */
@@ -77,33 +79,43 @@ public class EventCC {
         request.execute();
     }
 
-    public void addEvent(JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, double latitude, double longitude) {
+    public void addEvent(JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, int latitude, int longitude) {
         AddEventRequest request = new AddEventRequest(contract, receiver, title, description, image, timestamp, latitude, longitude);
         request.execute();
     }
 
-    public void queryEvents(JsonObjectReceiver receiver, String query) {
+    public void queryEvents(JsonObjectReceiver receiver, JSONObject query) {
         QueryRequest request = new QueryRequest(contract, receiver, query);
         request.execute();
     }
 
     public void queryEventsByTwitterId(JsonObjectReceiver receiver, String twitterId) {
-        //TODO: build query string
-        String query = "";
-        QueryRequest request = new QueryRequest(contract, receiver, query);
+        try {
+            JSONObject query = new JSONObject(
+                    "{" +
+                            "   \"selector\":{" +
+                            "      \"docType\":\"event\"," +
+                            "      \"description\":\"" + twitterId + "\"" +
+                            "   }" +
+                            "}");
+            queryEvents(receiver, query);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error building query for twitterId: \"" + twitterId + "\"");
+            e.printStackTrace();
+        }
+    }
+
+    public void assessEvent(AssessReceiver receiver, String eventId, int rating, String image, String description) {
+        AssessRequest request = new AssessRequest(contract, receiver, eventId, rating, image, description);
         request.execute();
     }
 
-    public void assessEvent(JsonObjectReceiver receiver, String eventId, int rating, String image, String description) {
-        AssessRequest request = new AssessRequest(contract, receiver, eventId, rating, image, description);
-    }
-
-    private void trackLocation(JsonObjectReceiver receiver, int longitude, int latitude) {
+    public void trackLocation(JsonObjectReceiver receiver, int longitude, int latitude) {
         TrackLocationRequest request = new TrackLocationRequest(contract, receiver, longitude, latitude);
         request.execute();
     }
 
-    private void getFullEvent(JsonObjectReceiver receiver, String eventId) {
+    public void getFullEvent(JsonObjectReceiver receiver, String eventId) {
         GetFullEventRequest request = new GetFullEventRequest(contract, receiver, eventId);
         request.execute();
     }

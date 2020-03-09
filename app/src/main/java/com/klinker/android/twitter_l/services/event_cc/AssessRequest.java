@@ -14,11 +14,11 @@ import java.util.concurrent.TimeoutException;
 public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
     private final String TAG = "AssessRequest";
     private Contract contract;
-    private JsonObjectReceiver receiver;
+    private AssessReceiver receiver;
     private String eventId, image, description;
     private int rating;
 
-    public AssessRequest(Contract contract, JsonObjectReceiver receiver, String eventId, int rating, String image, String description) {
+    public AssessRequest(Contract contract, AssessReceiver receiver, String eventId, int rating, String image, String description) {
         this.contract = contract;
         this.receiver = receiver;
         this.eventId = eventId;
@@ -29,13 +29,14 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
 
     @Override
     protected JSONObject doInBackground(Void... voids) {
+        Log.i(TAG, "Assessing event with id: \"" + eventId + "\" as rating: \"" + rating + "\"");
         byte[] response = new byte[0];
         try {
             response = contract.submitTransaction("assessEvent", "{" +
                     "   \"event\":\"" + eventId + "\"," +
-                    "   \"rating\":" + rating + ".0," +
-                    "   \"image\":\"" + image + "\"," +
-                    "   \"description\":\"" + description + "\"" +
+                    "   \"rating\":" + rating + ".0" +
+//                    "   \"image\":\"" + image + "\"," +
+//                    "   \"description\":\"" + description + "\"" +
                     "}");
         } catch (ContractException | TimeoutException | InterruptedException e) {
             Log.e(TAG, "Error assessing event");
@@ -54,7 +55,7 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
     protected void onPostExecute(JSONObject assessment) {
         if (null != assessment) {
             Log.i(TAG, "assessed: " + assessment);
-            receiver.display(assessment);
+            receiver.displayAssessment(assessment);
         }
     }
 }

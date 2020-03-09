@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 
 public class TrackLocationRequest extends AsyncTask<Void, Void, JSONObject> {
-    private final String TAG = "TrackLocation";
+    private final String TAG = "Track Location Request";
     private Contract contract;
     private JsonObjectReceiver receiver;
     private int longitude;
@@ -31,10 +31,10 @@ public class TrackLocationRequest extends AsyncTask<Void, Void, JSONObject> {
         try {
             response = contract.submitTransaction("trackLocation", "{" +
                     "   \"latitude\":" + latitude + "," +
-                    "   \"longitude\":" + longitude + "," +
+                    "   \"longitude\":" + longitude +
                     "}");
         } catch (ContractException | TimeoutException | InterruptedException e) {
-            Log.e(TAG, "Error assessing event");
+            Log.e(TAG, "Error tracking location");
             e.printStackTrace();
         }
         try {

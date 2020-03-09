@@ -20,10 +20,10 @@ public class AddEventRequest extends AsyncTask<Void, Void, JSONObject> {
     private String description;
     private String image;
     private Date timestamp;
-    private double latitude;
-    private double longitude;
+    private int latitude;
+    private int longitude;
 
-    public AddEventRequest(Contract contract, JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, double latitude, double longitude) {
+    public AddEventRequest(Contract contract, JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, int latitude, int longitude) {
         this.contract = contract;
         this.receiver = receiver;
         this.title = title;
@@ -46,7 +46,7 @@ public class AddEventRequest extends AsyncTask<Void, Void, JSONObject> {
                     "    \"latitude\": " + latitude + "," +
                     "    \"longitude\": " + longitude + "" +
                     "  }," +
-                    "  \"timestamp\": \"" + timestamp + "\"" +
+                    "  \"timestamp\": \"" + (timestamp.getTime() / 1000) + "\"" +
                     "}");
         } catch (ContractException | TimeoutException | InterruptedException e) {
             Log.e(TAG, "Error posting event: " + title);
