@@ -8,11 +8,8 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Point;
-import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.core.app.NotificationManagerCompat;
-import androidx.cardview.widget.CardView;
 import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
@@ -32,14 +29,16 @@ import com.klinker.android.peekview.PeekViewActivity;
 import com.klinker.android.twitter_l.R;
 import com.klinker.android.twitter_l.activities.media_viewer.VideoViewerActivity;
 import com.klinker.android.twitter_l.activities.media_viewer.image.ImageViewerActivity;
+import com.klinker.android.twitter_l.activities.media_viewer.image.TimeoutThread;
 import com.klinker.android.twitter_l.activities.profile_viewer.ProfilePager;
 import com.klinker.android.twitter_l.data.sq_lite.HomeSQLiteHelper;
 import com.klinker.android.twitter_l.listeners.MultipleImageTouchListener;
+import com.klinker.android.twitter_l.services.event_cc.EventCC;
+import com.klinker.android.twitter_l.services.event_cc.JsonObjectReceiver;
 import com.klinker.android.twitter_l.settings.AppSettings;
 import com.klinker.android.twitter_l.utils.ExpansionViewHelper;
 import com.klinker.android.twitter_l.utils.NotificationUtils;
 import com.klinker.android.twitter_l.utils.ReplyUtils;
-import com.klinker.android.twitter_l.activities.media_viewer.image.TimeoutThread;
 import com.klinker.android.twitter_l.utils.TweetLinkUtils;
 import com.klinker.android.twitter_l.utils.Utils;
 import com.klinker.android.twitter_l.utils.VideoMatcherUtil;
@@ -49,19 +48,26 @@ import com.klinker.android.twitter_l.views.badges.GifBadge;
 import com.klinker.android.twitter_l.views.badges.VideoBadge;
 import com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import androidx.cardview.widget.CardView;
+import androidx.core.app.NotificationManagerCompat;
 import de.hdodenhof.circleimageview.CircleImageView;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import xyz.klinker.android.drag_dismiss.DragDismissIntentBuilder;
 import xyz.klinker.android.drag_dismiss.delegate.DragDismissDelegate;
 
-public class TweetActivity extends PeekViewActivity implements DragDismissDelegate.Callback {
+public class TweetActivity extends PeekViewActivity implements DragDismissDelegate.Callback, JsonObjectReceiver {
 
     public static Intent getIntent(Context context, Cursor cursor) {
         return getIntent(context, cursor, false);
@@ -170,12 +176,14 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public String gifVideo;
     public boolean isAConversation = false;
     public long videoDuration = -1;
-    public Location location;
 
     protected boolean fromLauncher = false;
     protected boolean fromNotification = false;
 
     private boolean sharedTransition = false;
+
+    private String TAG = "TweetActivity";
+    EventCC eventCC;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -190,6 +198,14 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
     @Override
     public View onCreateContent(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
+        if (null == eventCC) {
+            try {
+                eventCC = new EventCC(this);
+            } catch (IOException e) {
+                Log.e(TAG, "Error creating EventCC");
+                e.printStackTrace();
+            }
+        }
 
         Utils.setTaskDescription(this);
 
@@ -389,9 +405,6 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         gifVideo = from.getStringExtra("animated_gif");
         isAConversation = from.getBooleanExtra("conversation", false);
         videoDuration = from.getLongExtra("video_duration", -1);
-        location = new Location("provicer");
-        location.setLongitude(12);
-        location.setLatitude(11); //TODO
 
         try {
             users = from.getStringExtra("users").split("  ");
@@ -447,7 +460,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public FontPrefTextView nametv;
     public FontPrefTextView screennametv;
     public FontPrefTextView tweettv;
-    public FontPrefTextView locationtv;
+    public FontPrefTextView eventCCtv;
 
     public void setUIElements(final View layout) {
 
@@ -461,7 +474,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         profilePic = (CircleImageView) layout.findViewById(R.id.profile_pic);
         image = (ImageView) layout.findViewById(R.id.image);
         timetv = (FontPrefTextView) layout.findViewById(R.id.time);
-        locationtv = (FontPrefTextView) layout.findViewById(R.id.location);
+        eventCCtv = (FontPrefTextView) layout.findViewById(R.id.location);
 
         tweettv.setTextSize(settings.textSize);
         screennametv.setTextSize(settings.textSize - 2);
@@ -469,7 +482,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         timetv.setTextSize(settings.textSize - 3);
         retweetertv.setTextSize(settings.textSize - 3);
         repliesTv.setTextSize(settings.textSize - 2);
-        locationtv.setTextSize(settings.textSize - 3);
+        eventCCtv.setTextSize(settings.textSize - 3);
 
         View.OnClickListener viewPro = new View.OnClickListener() {
             @Override
@@ -595,8 +608,6 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             }
         }
 
-        locationtv.setText(location.getLatitude() + " " + location.getLongitude());
-
         try {
             tweettv.setText(replace ?
                     tweet.substring(0, tweet.length() - (embeddedTweetFound ? 33 : 25)) :
@@ -665,6 +676,18 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
         LinearLayout ex = (LinearLayout) layout.findViewById(R.id.expansion_area);
         ex.addView(expansionHelper.getExpansion());
+
+        if (null == eventCC) {
+            try {
+                eventCC = new EventCC(this);
+            } catch (IOException e) {
+                Log.e(TAG, "Error creating EventCC");
+                e.printStackTrace();
+            }
+        }
+
+        // query eventCC for the corresponding event
+        eventCC.queryEventsByTwitterId(this, String.valueOf(tweetId));
     }
 
     private void setTime(long time) {
@@ -702,6 +725,21 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
                     .diskCacheStrategy(DiskCacheStrategy.SOURCE).into(target);
         } catch (Exception e) {
             // activity destroyed
+        }
+    }
+
+    @Override
+    public void display(JSONObject events) {
+        // events contains all events from the block chain network, that have the twitter id = 'tweetId'
+        // we will simply use the first one. events is always non-null
+        try {
+            JSONArray array = events.getJSONArray("events");
+            JSONObject event = array.getJSONObject(0);
+            int trust = event.getInt("trustworthiness");
+            eventCCtv.setText("Trust: " + trust);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error getting trust from JSON: " + events);
+            e.printStackTrace();
         }
     }
 }

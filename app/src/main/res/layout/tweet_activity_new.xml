@@ -125,7 +125,7 @@
 
                         <com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView
                             android:id="@+id/location"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="end"
                             android:paddingBottom="5dp"

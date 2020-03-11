@@ -51,7 +51,7 @@ public class QueryRequest extends AsyncTask<Void, Void, JSONArray> {
 
     @Override
     protected void onPostExecute(JSONArray eventsArr) {
-        if (null != eventsArr) {
+        if (null != eventsArr && eventsArr.length() > 0) {
             // convert JSONArray to JSONObject
             Log.i(TAG, "Read Events: " + eventsArr);
             JSONObject events = new JSONObject();
