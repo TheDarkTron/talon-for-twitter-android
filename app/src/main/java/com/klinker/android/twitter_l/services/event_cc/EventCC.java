@@ -43,14 +43,14 @@ public class EventCC {
         AssetManager assetManager = context.getAssets();
 
         // read certificate and key
-        InputStream cert = assetManager.open("User1@org1.example.com-cert.pem");
-        InputStream key = assetManager.open("key.pem");
+        InputStream cert = assetManager.open("eventCC/User1@org1.example.com-cert.pem");
+        InputStream key = assetManager.open("eventCC/key.pem");
 
         // create identity
         Wallet.Identity identity = Wallet.Identity.createIdentity("Org1MSP", new InputStreamReader(cert), new InputStreamReader(key));
 
         // read connection config
-        connectionConf = assetManager.open("connection.json");
+        connectionConf = assetManager.open("eventCC/connection.json");
 
         // create wallet
         wallet = Wallet.createInMemoryWallet();

@@ -179,7 +179,6 @@ public abstract class Compose extends Activity implements
     final Pattern p = Patterns.WEB_URL;
 
     private final String TAG = "Add Event Fragment";
-    private EventCC eventCC;
 
     private int getCountFromString(String text) {
         if (AppSettings.isLimitedTweetCharLanguage()) {
@@ -415,14 +414,6 @@ public abstract class Compose extends Activity implements
                 f.set(reply, context.getResources().getColor(R.color.pressed_white));
             } catch (Exception ignored) {
             }
-        }
-
-        // initialize eventCC
-        try {
-            eventCC = new EventCC(this);
-        } catch (IOException e) {
-            Log.e(TAG, "Error creating EventCC");
-            e.printStackTrace();
         }
     }
 
@@ -1225,6 +1216,7 @@ public abstract class Compose extends Activity implements
         private boolean secondTry;
         private int remaining;
         private InputStream stream;
+        private EventCC eventCC;
 
         public UpdateTwitterStatus(String text, int length) {
             if (quotingAStatus != null) {
@@ -1365,7 +1357,13 @@ public abstract class Compose extends Activity implements
 
                 twitter4j.Status status = twitter.updateStatus(media); // TODO: this is exactly what I want <----|
                 if (status != null) {
-                    eventCC.addEvent(this, status.getText(), String.valueOf(status.getId()), "", status.getCreatedAt(), status.getGeoLocation().getLatitude(), status.getGeoLocation().getLongitude());
+                    Log.i(TAG, "Adding post to eventCC");
+                    GeoLocation location = status.getGeoLocation();
+                    if (null != location) {
+                        eventCC.addEvent(this, status.getText(), String.valueOf(status.getId()), "", status.getCreatedAt(), (int) location.getLatitude(), (int) location.getLongitude());
+                    } else {
+                        eventCC.addEvent(this, status.getText(), String.valueOf(status.getId()), "", status.getCreatedAt(), 0, 0);
+                    }
                     notiId = status.getId();
                 }
             }
@@ -1395,6 +1393,14 @@ public abstract class Compose extends Activity implements
         }
 
         protected Boolean doInBackground(String... args) {
+            // initialize eventCC
+            try {
+                eventCC = new EventCC(getApplicationContext());
+            } catch (IOException e) {
+                Log.e(TAG, "Error creating EventCC");
+                e.printStackTrace();
+            }
+
             status = args[0];
 
             if (quotingAStatus != null) {
