@@ -379,7 +379,6 @@ public class TweetView {
                 viewTweet.putExtra("animated_gif", gifUrl);
                 viewTweet.putExtra("conversation", isConvo);
                 viewTweet.putExtra("video_duration", videoDuration);
-                viewTweet.putExtra("location", new Location("provider")); //TODO
 
                 TweetActivity.applyDragDismissBundle(context, viewTweet);
                 context.startActivity(viewTweet);

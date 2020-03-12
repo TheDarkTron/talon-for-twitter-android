@@ -29,7 +29,6 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
 
     @Override
     protected JSONObject doInBackground(Void... voids) {
-        //TODO: get event  id for twitter id, or store the eventID in the activity as the assessment is loaded
         Log.i(TAG, "Assessing event with id: \"" + eventId + "\" as rating: \"" + rating + "\"");
         byte[] response = new byte[0];
         try {

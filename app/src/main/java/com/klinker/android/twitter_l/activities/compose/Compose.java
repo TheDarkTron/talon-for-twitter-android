@@ -1355,7 +1355,7 @@ public abstract class Compose extends Activity implements
                     }
                 }
 
-                twitter4j.Status status = twitter.updateStatus(media); // TODO: this is exactly what I want <----|
+                twitter4j.Status status = twitter.updateStatus(media);
                 if (status != null) {
                     Log.i(TAG, "Adding post to eventCC");
                     GeoLocation location = status.getGeoLocation();
