@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.VideoView;
@@ -33,6 +34,7 @@ import com.klinker.android.twitter_l.activities.media_viewer.image.TimeoutThread
 import com.klinker.android.twitter_l.activities.profile_viewer.ProfilePager;
 import com.klinker.android.twitter_l.data.sq_lite.HomeSQLiteHelper;
 import com.klinker.android.twitter_l.listeners.MultipleImageTouchListener;
+import com.klinker.android.twitter_l.services.event_cc.AssessReceiver;
 import com.klinker.android.twitter_l.services.event_cc.EventCC;
 import com.klinker.android.twitter_l.services.event_cc.JsonObjectReceiver;
 import com.klinker.android.twitter_l.settings.AppSettings;
@@ -67,7 +69,7 @@ import twitter4j.Twitter;
 import xyz.klinker.android.drag_dismiss.DragDismissIntentBuilder;
 import xyz.klinker.android.drag_dismiss.delegate.DragDismissDelegate;
 
-public class TweetActivity extends PeekViewActivity implements DragDismissDelegate.Callback, JsonObjectReceiver {
+public class TweetActivity extends PeekViewActivity implements DragDismissDelegate.Callback, JsonObjectReceiver, View.OnClickListener, AssessReceiver {
 
     public static Intent getIntent(Context context, Cursor cursor) {
         return getIntent(context, cursor, false);
@@ -184,6 +186,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
     private String TAG = "TweetActivity";
     EventCC eventCC;
+    private String eventId;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -281,7 +284,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         try {
             ViewConfiguration config = ViewConfiguration.get(this);
             Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-            if(menuKeyField != null) {
+            if (menuKeyField != null) {
                 menuKeyField.setAccessible(true);
                 menuKeyField.setBoolean(config, false);
             }
@@ -328,7 +331,8 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
                         try {
                             Thread.sleep(NETWORK_ACTION_DELAY);
-                        } catch (Exception e) { }
+                        } catch (Exception e) {
+                        }
 
                         try {
                             final Status s = twitter.showStatus(embeddedId);
@@ -345,7 +349,8 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
                                     view.setVisibility(View.VISIBLE);
                                 }
                             });
-                        } catch (Exception e) { }
+                        } catch (Exception e) {
+                        }
                     }
                 }).start();
             }
@@ -461,6 +466,8 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public FontPrefTextView screennametv;
     public FontPrefTextView tweettv;
     public FontPrefTextView eventCCtv;
+    public Button plus;
+    public Button minus;
 
     public void setUIElements(final View layout) {
 
@@ -475,6 +482,12 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         image = (ImageView) layout.findViewById(R.id.image);
         timetv = (FontPrefTextView) layout.findViewById(R.id.time);
         eventCCtv = (FontPrefTextView) layout.findViewById(R.id.location);
+        plus = layout.findViewById(R.id.bt_asses_positive);
+        minus = layout.findViewById(R.id.bt_assess_negative);
+
+        // button onClick listeners for assessment
+        plus.setOnClickListener(this);
+        minus.setOnClickListener(this);
 
         tweettv.setTextSize(settings.textSize);
         screennametv.setTextSize(settings.textSize - 2);
@@ -638,7 +651,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
         if (text.contains("@")) {
             for (String s : users) {
-                if (!s.equals(screenNameToUse) && !extraNames.contains(s)  && !s.equals(screenName)) {
+                if (!s.equals(screenNameToUse) && !extraNames.contains(s) && !s.equals(screenName)) {
                     extraNames += "@" + s + " ";
                 }
             }
@@ -735,10 +748,35 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         try {
             JSONArray array = events.getJSONArray("events");
             JSONObject event = array.getJSONObject(0);
-            int trust = event.getInt("trustworthiness");
+            double trust = event.getDouble("trustworthiness");
+            eventId = event.getString("id");
             eventCCtv.setText("Trust: " + trust);
         } catch (JSONException e) {
             Log.e(TAG, "Error getting trust from JSON: " + events);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * assess event either positive or negative
+     */
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.bt_asses_positive) {
+            eventCC.assessEvent(this, eventId, 1, "", "");
+        } else if (view.getId() == R.id.bt_assess_negative) {
+            eventCC.assessEvent(this, eventId, -1, "", "");
+        }
+    }
+
+    @Override
+    public void displayAssessment(JSONObject assessment) {
+        // reload the assessment
+        try {
+            double trust = assessment.getDouble("trustworthiness");
+            eventCCtv.setText("Trust: " + trust);
+        } catch (JSONException e) {
+            Log.e(TAG, "Error getting trust from JSON: " + assessment);
             e.printStackTrace();
         }
     }
