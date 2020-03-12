@@ -116,6 +116,7 @@ dependencies {
     // event chain
     implementation files('lib/fabric-sdk-java-1.4.8-jar-with-dependencies.jar')
     implementation files('lib/fabric-gateway-java-1.4.3.jar')
+    implementation project(":location")
 }
 
 apply plugin: 'com.google.gms.google-services'
