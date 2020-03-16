@@ -1,7 +1,10 @@
 package com.klinker.android.twitter_l.services.event_cc;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
+import android.os.IBinder;
 import android.util.Log;
 
 import org.hyperledger.fabric.gateway.Contract;
@@ -15,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Date;
+
+import androidx.annotation.Nullable;
 
 /**
  * Initializes the fabric gateway. Provides functions to interact with the EventCC network.

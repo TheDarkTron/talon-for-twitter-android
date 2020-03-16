@@ -28,6 +28,7 @@ import com.klinker.android.link_builder.Link;
 import com.klinker.android.link_builder.LinkBuilder;
 import com.klinker.android.peekview.PeekViewActivity;
 import com.klinker.android.twitter_l.R;
+import com.klinker.android.twitter_l.ShowAssessments;
 import com.klinker.android.twitter_l.activities.media_viewer.VideoViewerActivity;
 import com.klinker.android.twitter_l.activities.media_viewer.image.ImageViewerActivity;
 import com.klinker.android.twitter_l.activities.media_viewer.image.TimeoutThread;
@@ -766,6 +767,12 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             eventCC.assessEvent(this, eventId, 1, "", "");
         } else if (view.getId() == R.id.bt_assess_negative) {
             eventCC.assessEvent(this, eventId, -1, "", "");
+        } else if (view.getId() == R.id.location) {
+            // start new activity with list of assessments
+            Log.i(TAG, "showing assessments");
+            Intent showAssessments = new Intent(this, ShowAssessments.class);
+            showAssessments.putExtra("eventId", eventId);
+            startActivity(showAssessments);
         }
     }
 
