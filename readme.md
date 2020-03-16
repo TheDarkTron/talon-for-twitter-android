@@ -1,3 +1,9 @@
+# Trusty Twitter fork of Talon
+
+Talon App extended with the EventChain system to detect Fake News.
+
+Original readme below:
+
 # Talon for Twitter
 
 ![promo](promo/github/promo.png)
