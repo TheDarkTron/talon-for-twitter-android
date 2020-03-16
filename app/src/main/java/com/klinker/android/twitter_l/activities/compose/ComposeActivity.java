@@ -32,7 +32,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
-import android.provider.Settings;
 import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
@@ -55,7 +54,6 @@ import com.klinker.android.twitter_l.utils.Utils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -393,7 +391,7 @@ public class ComposeActivity extends Compose {
             }
         });
 
-        final ImageButton location = (ImageButton) findViewById(R.id.location);
+        final ImageButton location = (ImageButton) findViewById(R.id.trust);
         location.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

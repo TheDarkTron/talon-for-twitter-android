@@ -86,7 +86,7 @@
 
             <TextView
                 android:layout_marginTop="8dp"
-                android:id="@+id/location"
+                android:id="@+id/trust"
                 android:textColor="@android:color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

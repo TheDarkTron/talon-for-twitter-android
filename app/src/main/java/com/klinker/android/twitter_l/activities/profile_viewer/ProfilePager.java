@@ -1437,7 +1437,7 @@ public class ProfilePager extends WhiteToolbarActivity implements DragDismissDel
 
         final FontPrefEditText name = (FontPrefEditText) dialog.findViewById(R.id.name);
         final FontPrefEditText url = (FontPrefEditText) dialog.findViewById(R.id.url);
-        final FontPrefEditText location = (FontPrefEditText) dialog.findViewById(R.id.location);
+        final FontPrefEditText location = (FontPrefEditText) dialog.findViewById(R.id.trust);
         final FontPrefEditText description = (FontPrefEditText) dialog.findViewById(R.id.description);
 
 

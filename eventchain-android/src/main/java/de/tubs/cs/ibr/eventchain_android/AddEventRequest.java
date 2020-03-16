@@ -1,4 +1,4 @@
-package com.klinker.android.twitter_l.services.event_cc;
+package de.tubs.cs.ibr.eventchain_android;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -23,7 +23,7 @@ public class AddEventRequest extends AsyncTask<Void, Void, JSONObject> {
     private int latitude;
     private int longitude;
 
-    public AddEventRequest(Contract contract, JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, int latitude, int longitude) {
+    AddEventRequest(Contract contract, JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, int latitude, int longitude) {
         this.contract = contract;
         this.receiver = receiver;
         this.title = title;
@@ -49,15 +49,13 @@ public class AddEventRequest extends AsyncTask<Void, Void, JSONObject> {
                     "  \"timestamp\": \"" + (timestamp.getTime() / 1000) + "\"" +
                     "}");
         } catch (ContractException | TimeoutException | InterruptedException e) {
-            Log.e(TAG, "Error posting event: " + title);
-            e.printStackTrace();
+            Log.e(TAG, "Error adding event: \"" + title + "\"");
         }
 
         try {
             return new JSONObject(new String(response, StandardCharsets.UTF_8));
         } catch (JSONException e) {
             Log.e(TAG, "Error while parsing JSON: \"" + new String(response, StandardCharsets.UTF_8) + "\"");
-            e.printStackTrace();
         }
         return null;
     }

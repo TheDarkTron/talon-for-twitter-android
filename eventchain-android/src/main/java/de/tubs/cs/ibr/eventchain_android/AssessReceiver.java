@@ -1,4 +1,4 @@
-package com.klinker.android.twitter_l.services.event_cc;
+package de.tubs.cs.ibr.eventchain_android;
 
 import org.json.JSONObject;
 

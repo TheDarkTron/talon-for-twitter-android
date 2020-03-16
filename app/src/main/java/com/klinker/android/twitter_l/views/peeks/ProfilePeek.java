@@ -16,7 +16,6 @@ import com.klinker.android.peekview.callback.SimpleOnPeek;
 import com.klinker.android.twitter_l.R;
 import com.klinker.android.twitter_l.settings.AppSettings;
 import com.klinker.android.twitter_l.activities.media_viewer.image.TimeoutThread;
-import com.klinker.android.twitter_l.util.ColorUtils;
 import com.klinker.android.twitter_l.utils.Utils;
 
 import twitter4j.Relationship;
@@ -62,7 +61,7 @@ public class ProfilePeek extends SimpleOnPeek {
         verified = (ImageView) rootView.findViewById(R.id.verified);
         realName = (TextView) rootView.findViewById(R.id.real_name);
         screenName = (TextView) rootView.findViewById(R.id.screen_name);
-        location = (TextView) rootView.findViewById(R.id.location);
+        location = (TextView) rootView.findViewById(R.id.trust);
         description = (TextView) rootView.findViewById(R.id.description);
         followerCount = (TextView) rootView.findViewById(R.id.followers_count);
         friendCount = (TextView) rootView.findViewById(R.id.following_count);

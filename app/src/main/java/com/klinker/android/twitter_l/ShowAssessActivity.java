@@ -1,20 +1,20 @@
 package com.klinker.android.twitter_l;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.klinker.android.twitter_l.services.event_cc.EventCC;
-import com.klinker.android.twitter_l.services.event_cc.JsonObjectReceiver;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,13 +22,40 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import de.tubs.cs.ibr.eventchain_android.EventCC;
+import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
 
-public class ShowAssessments extends AppCompatActivity implements JsonObjectReceiver {
+public class ShowAssessActivity extends AppCompatActivity implements JsonObjectReceiver {
 
     private AssessmentAdapter mAdapter;
 
     private String TAG = "Assessments Activity";
     private EventCC eventCC;
+    private boolean boundService = false; // only send transactions to the EventCC if this flag is true
+    private ServiceConnection connection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            // We've bound to EventCC, cast the IBinder and get LocalService instance
+            EventCC.LocalBinder binder = (EventCC.LocalBinder) service;
+            eventCC = binder.getService();
+            boundService = true;
+            eventCC.getFullEvent(ShowAssessActivity.this, getIntent().getStringExtra("eventId"));
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            boundService = false;
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent = new Intent(this, EventCC.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,17 +74,6 @@ public class ShowAssessments extends AppCompatActivity implements JsonObjectRece
         // specify an adapter (see also next example)
         mAdapter = new AssessmentAdapter(null);
         recyclerView.setAdapter(mAdapter);
-
-        if (null == eventCC) {
-            try {
-                eventCC = new EventCC(this);
-            } catch (IOException e) {
-                Log.e(TAG, "Error creating EventCC");
-                e.printStackTrace();
-            }
-        }
-
-        eventCC.getFullEvent(this, getIntent().getStringExtra("eventId"));
     }
 
     @Override

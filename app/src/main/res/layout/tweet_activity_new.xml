@@ -130,7 +130,7 @@
                         android:orientation="horizontal">
 
                         <com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView
-                            android:id="@+id/location"
+                            android:id="@+id/trust"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="5dp"

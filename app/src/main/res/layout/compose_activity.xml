@@ -311,7 +311,7 @@
                         android:layout_gravity="center" />
 
                 <ImageButton
-                        android:id="@+id/location"
+                        android:id="@+id/trust"
                         android:layout_height="36dp"
                         android:layout_width="36dp"
                         android:layout_marginEnd="6dp"

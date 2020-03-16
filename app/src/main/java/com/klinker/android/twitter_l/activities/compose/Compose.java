@@ -41,11 +41,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.ParcelFileDescriptor;
 import android.os.Vibrator;
-import androidx.core.view.inputmethod.InputConnectionCompat;
-import androidx.core.view.inputmethod.InputContentInfoCompat;
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-import androidx.core.util.Pair;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -74,23 +69,30 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
 import com.klinker.android.twitter_l.R;
 import com.klinker.android.twitter_l.activities.GiphySearch;
+import com.klinker.android.twitter_l.activities.MainActivity;
 import com.klinker.android.twitter_l.data.ThemeColor;
 import com.klinker.android.twitter_l.data.sq_lite.HashtagDataSource;
 import com.klinker.android.twitter_l.data.sq_lite.QueuedDataSource;
-import com.klinker.android.twitter_l.services.event_cc.EventCC;
-import com.klinker.android.twitter_l.services.event_cc.JsonObjectReceiver;
-import com.klinker.android.twitter_l.utils.FingerprintDialog;
-import com.klinker.android.twitter_l.utils.NotificationChannelUtil;
-import com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView;
 import com.klinker.android.twitter_l.settings.AppSettings;
-import com.klinker.android.twitter_l.views.widgets.EmojiKeyboard;
-import com.klinker.android.twitter_l.activities.MainActivity;
+import com.klinker.android.twitter_l.utils.FingerprintDialog;
 import com.klinker.android.twitter_l.utils.IOUtils;
 import com.klinker.android.twitter_l.utils.ImageUtils;
+import com.klinker.android.twitter_l.utils.NotificationChannelUtil;
 import com.klinker.android.twitter_l.utils.NotificationUtils;
+import com.klinker.android.twitter_l.utils.Utils;
 import com.klinker.android.twitter_l.utils.api_helper.GiphyHelper;
 import com.klinker.android.twitter_l.utils.api_helper.TwitLongerHelper;
-import com.klinker.android.twitter_l.utils.Utils;
+import com.klinker.android.twitter_l.utils.text.TextUtils;
+import com.klinker.android.twitter_l.views.widgets.EmojiKeyboard;
+import com.klinker.android.twitter_l.views.widgets.ImageKeyboardEditText;
+import com.klinker.android.twitter_l.views.widgets.text.FontPrefTextView;
+import com.yalantis.ucrop.UCrop;
+
+import net.ypresto.androidtranscoder.MediaTranscoder;
+import net.ypresto.androidtranscoder.format.AndroidStandardFormatStrategy;
+import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -107,24 +109,21 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.klinker.android.twitter_l.utils.text.TextUtils;
-import com.klinker.android.twitter_l.views.widgets.ImageKeyboardEditText;
-import com.yalantis.ucrop.UCrop;
-
-import net.ypresto.androidtranscoder.MediaTranscoder;
-import net.ypresto.androidtranscoder.format.AndroidStandardFormatStrategy;
-import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import javax.json.Json;
-
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.util.Pair;
+import androidx.core.view.inputmethod.InputConnectionCompat;
+import androidx.core.view.inputmethod.InputContentInfoCompat;
+import de.tubs.cs.ibr.eventchain_android.EventCC;
+import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
+import twitter4j.DirectMessageEvent;
 import twitter4j.GeoLocation;
+import twitter4j.MessageData;
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
-import twitter4j.*;
+import twitter4j.UploadedMedia;
+import twitter4j.User;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
 public abstract class Compose extends Activity implements

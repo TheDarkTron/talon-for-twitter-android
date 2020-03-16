@@ -1,15 +1,18 @@
 package com.klinker.android.twitter_l.activities.tweet_viewer;
 
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
@@ -28,16 +31,13 @@ import com.klinker.android.link_builder.Link;
 import com.klinker.android.link_builder.LinkBuilder;
 import com.klinker.android.peekview.PeekViewActivity;
 import com.klinker.android.twitter_l.R;
-import com.klinker.android.twitter_l.ShowAssessments;
+import com.klinker.android.twitter_l.ShowAssessActivity;
 import com.klinker.android.twitter_l.activities.media_viewer.VideoViewerActivity;
 import com.klinker.android.twitter_l.activities.media_viewer.image.ImageViewerActivity;
 import com.klinker.android.twitter_l.activities.media_viewer.image.TimeoutThread;
 import com.klinker.android.twitter_l.activities.profile_viewer.ProfilePager;
 import com.klinker.android.twitter_l.data.sq_lite.HomeSQLiteHelper;
 import com.klinker.android.twitter_l.listeners.MultipleImageTouchListener;
-import com.klinker.android.twitter_l.services.event_cc.AssessReceiver;
-import com.klinker.android.twitter_l.services.event_cc.EventCC;
-import com.klinker.android.twitter_l.services.event_cc.JsonObjectReceiver;
 import com.klinker.android.twitter_l.settings.AppSettings;
 import com.klinker.android.twitter_l.utils.ExpansionViewHelper;
 import com.klinker.android.twitter_l.utils.NotificationUtils;
@@ -55,7 +55,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -65,6 +64,9 @@ import java.util.Locale;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.NotificationManagerCompat;
 import de.hdodenhof.circleimageview.CircleImageView;
+import de.tubs.cs.ibr.eventchain_android.AssessReceiver;
+import de.tubs.cs.ibr.eventchain_android.EventCC;
+import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import xyz.klinker.android.drag_dismiss.DragDismissIntentBuilder;
@@ -186,8 +188,33 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     private boolean sharedTransition = false;
 
     private String TAG = "TweetActivity";
-    EventCC eventCC;
     private String eventId;
+    EventCC eventCC;
+    private boolean boundService = false; // only send transactions to the EventCC if this flag is true
+    private ServiceConnection connection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            // We've bound to EventCC, cast the IBinder and get LocalService instance
+            EventCC.LocalBinder binder = (EventCC.LocalBinder) service;
+            eventCC = binder.getService();
+            boundService = true;
+            eventCC.queryEventsByDescription(TweetActivity.this, String.valueOf(tweetId));
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            boundService = false;
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent intent = new Intent(this, EventCC.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -202,15 +229,6 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
     @Override
     public View onCreateContent(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
-        if (null == eventCC) {
-            try {
-                eventCC = new EventCC(this);
-            } catch (IOException e) {
-                Log.e(TAG, "Error creating EventCC");
-                e.printStackTrace();
-            }
-        }
-
         Utils.setTaskDescription(this);
 
         NotificationManagerCompat notificationManager =
@@ -482,7 +500,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         profilePic = (CircleImageView) layout.findViewById(R.id.profile_pic);
         image = (ImageView) layout.findViewById(R.id.image);
         timetv = (FontPrefTextView) layout.findViewById(R.id.time);
-        eventCCtv = (FontPrefTextView) layout.findViewById(R.id.location);
+        eventCCtv = (FontPrefTextView) layout.findViewById(R.id.trust);
         plus = layout.findViewById(R.id.bt_asses_positive);
         minus = layout.findViewById(R.id.bt_assess_negative);
 
@@ -690,18 +708,6 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
         LinearLayout ex = (LinearLayout) layout.findViewById(R.id.expansion_area);
         ex.addView(expansionHelper.getExpansion());
-
-        if (null == eventCC) {
-            try {
-                eventCC = new EventCC(this);
-            } catch (IOException e) {
-                Log.e(TAG, "Error creating EventCC");
-                e.printStackTrace();
-            }
-        }
-
-        // query eventCC for the corresponding event
-        eventCC.queryEventsByTwitterId(this, String.valueOf(tweetId));
     }
 
     private void setTime(long time) {
@@ -763,14 +769,14 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
      */
     @Override
     public void onClick(View view) {
-        if (view.getId() == R.id.bt_asses_positive) {
+        if (view.getId() == R.id.bt_asses_positive && boundService) {
             eventCC.assessEvent(this, eventId, 1, "", "");
-        } else if (view.getId() == R.id.bt_assess_negative) {
+        } else if (view.getId() == R.id.bt_assess_negative && boundService) {
             eventCC.assessEvent(this, eventId, -1, "", "");
-        } else if (view.getId() == R.id.location) {
+        } else if (view.getId() == R.id.trust && eventId != null) {
             // start new activity with list of assessments
             Log.i(TAG, "showing assessments");
-            Intent showAssessments = new Intent(this, ShowAssessments.class);
+            Intent showAssessments = new Intent(this, ShowAssessActivity.class);
             showAssessments.putExtra("eventId", eventId);
             startActivity(showAssessments);
         }

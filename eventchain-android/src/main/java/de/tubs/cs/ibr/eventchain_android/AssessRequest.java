@@ -1,4 +1,4 @@
-package com.klinker.android.twitter_l.services.event_cc;
+package de.tubs.cs.ibr.eventchain_android;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -18,7 +18,7 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
     private String eventId, image, description;
     private int rating;
 
-    public AssessRequest(Contract contract, AssessReceiver receiver, String eventId, int rating, String image, String description) {
+    AssessRequest(Contract contract, AssessReceiver receiver, String eventId, int rating, String image, String description) {
         this.contract = contract;
         this.receiver = receiver;
         this.eventId = eventId;
@@ -29,7 +29,6 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
 
     @Override
     protected JSONObject doInBackground(Void... voids) {
-        Log.i(TAG, "Assessing event with id: \"" + eventId + "\" as rating: \"" + rating + "\"");
         byte[] response = new byte[0];
         try {
             response = contract.submitTransaction("assessEvent", "{" +
@@ -39,14 +38,13 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
 //                    "   \"description\":\"" + description + "\"" +
                     "}");
         } catch (ContractException | TimeoutException | InterruptedException e) {
-            Log.e(TAG, "Error assessing event");
-            e.printStackTrace();
+            Log.e(TAG, "Error assessing event with id:\"" + eventId + "\"");
         }
+
         try {
             return new JSONObject(new String(response, StandardCharsets.UTF_8));
         } catch (JSONException e) {
             Log.e(TAG, "Error while parsing JSON: \"" + new String(response, StandardCharsets.UTF_8) + "\"");
-            e.printStackTrace();
         }
         return null;
     }
@@ -54,7 +52,7 @@ public class AssessRequest extends AsyncTask<Void, Void, JSONObject> {
     @Override
     protected void onPostExecute(JSONObject assessment) {
         if (null != assessment) {
-            Log.i(TAG, "assessed: " + assessment);
+            Log.i(TAG, "assessed event: \"" + assessment + "\"");
             receiver.displayAssessment(assessment);
         }
     }

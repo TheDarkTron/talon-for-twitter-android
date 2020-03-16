@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-include ':app', ':wear', ':shared_assets', ':searchview', ':lvl', ':location'
+include ':app', ':wear', ':shared_assets', ':searchview', ':lvl', ':location', ':eventchain-android'
