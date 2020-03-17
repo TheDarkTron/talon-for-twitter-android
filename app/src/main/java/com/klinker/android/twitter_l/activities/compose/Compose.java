@@ -101,7 +101,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -1359,12 +1362,45 @@ public abstract class Compose extends Activity implements
                     Log.i(TAG, "Adding post to eventCC");
                     GeoLocation location = status.getGeoLocation();
                     if (null != location) {
-                        eventCC.addEvent(this, status.getText(), String.valueOf(status.getId()), "", status.getCreatedAt(), (int) location.getLatitude(), (int) location.getLongitude());
+                        eventCC.addEvent(this,
+                                status.getText(),
+                                String.valueOf(status.getId()),
+                                getMd5(status.getText() + (int) location.getLatitude() + (int) location.getLongitude()),
+                                status.getCreatedAt(),
+                                (int) location.getLatitude(),
+                                (int) location.getLongitude());
                     } else {
-                        eventCC.addEvent(this, status.getText(), String.valueOf(status.getId()), "", status.getCreatedAt(), 0, 0);
+                        Log.e(TAG, "Could not post event because location is null");
                     }
                     notiId = status.getId();
                 }
+            }
+        }
+
+        String getMd5(String input) {
+            try {
+
+                // Static getInstance method is called with hashing MD5
+                MessageDigest md = MessageDigest.getInstance("MD5");
+
+                // digest() method is called to calculate message digest
+                //  of an input digest() return array of byte
+                byte[] messageDigest = md.digest(input.getBytes());
+
+                // Convert byte array into signum representation
+                BigInteger no = new BigInteger(1, messageDigest);
+
+                // Convert message digest into hex value
+                String hashtext = no.toString(16);
+                while (hashtext.length() < 32) {
+                    hashtext = "0" + hashtext;
+                }
+                return hashtext;
+            }
+
+            // For specifying wrong message digest algorithms
+            catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -1727,7 +1763,6 @@ public abstract class Compose extends Activity implements
         public void display(JSONObject event) {
             Log.i(TAG, "Added event: " + event);
         }
-
 
 
     }

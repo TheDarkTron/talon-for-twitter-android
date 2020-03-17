@@ -56,6 +56,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -758,9 +761,43 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             double trust = event.getDouble("trustworthiness");
             eventId = event.getString("id");
             eventCCtv.setText("Trust: " + trust);
+            if (event.getString("image").equalsIgnoreCase(getMd5(tweet
+                    + event.getJSONObject("location").getInt("latitude")
+                    + event.getJSONObject("location").getInt("longitude")))) {
+                eventCCtv.setTextColor(Color.GREEN);
+            } else {
+                eventCCtv.setTextColor(Color.RED);
+            }
         } catch (JSONException e) {
             Log.e(TAG, "Error getting trust from JSON: " + events);
             e.printStackTrace();
+        }
+    }
+
+    String getMd5(String input) {
+        try {
+
+            // Static getInstance method is called with hashing MD5
+            MessageDigest md = MessageDigest.getInstance("MD5");
+
+            // digest() method is called to calculate message digest
+            //  of an input digest() return array of byte
+            byte[] messageDigest = md.digest(input.getBytes());
+
+            // Convert byte array into signum representation
+            BigInteger no = new BigInteger(1, messageDigest);
+
+            // Convert message digest into hex value
+            String hashtext = no.toString(16);
+            while (hashtext.length() < 32) {
+                hashtext = "0" + hashtext;
+            }
+            return hashtext;
+        }
+
+        // For specifying wrong message digest algorithms
+        catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 
