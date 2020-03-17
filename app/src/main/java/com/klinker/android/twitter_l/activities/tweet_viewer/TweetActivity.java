@@ -775,8 +775,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
                 eventCCtv.setTextColor(Color.RED);
             }
         } catch (JSONException e) {
-            Log.e(TAG, "Error getting trust from JSON: " + events);
-            e.printStackTrace();
+            Log.i(TAG, "No trust for this event");
         }
     }
 
