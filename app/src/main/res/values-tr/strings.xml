@@ -15,8 +15,8 @@
   limitations under the License.
   -->
 <resources>
-    <string name="app_name">Talon</string>
-    <string name="app_name_full">Talon for Twitter</string>
+    <string name="app_name">Trusty Twitter</string>
+    <string name="app_name_full">Trusty Twitter</string>
     <string name="extension_description">Güncellendiklerinde, okunmamış tweetler, bahsedenler ve direkt mesaj sayıları gösterilir.</string>
     <!-- Action Bar -->
     <string name="menu_refresh">Zaman Akışını Yenile</string>

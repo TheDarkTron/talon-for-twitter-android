@@ -15,8 +15,8 @@
   limitations under the License.
   -->
 <resources>
-    <string name="app_name">Talon</string>
-    <string name="app_name_full">Talon para Twitter</string>
+    <string name="app_name">Trusty Twitter</string>
+    <string name="app_name_full">Trusty Twitter</string>
     <string name="extension_description">Muestra la cantidad de tweets no leídos, menciones y mensajes directos en tiempo real.</string>
     <!-- Action Bar -->
     <string name="menu_refresh">Actualizar cronología</string>
