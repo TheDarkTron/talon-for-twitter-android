@@ -70,6 +70,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import de.tubs.cs.ibr.eventchain_android.AssessReceiver;
 import de.tubs.cs.ibr.eventchain_android.EventCC;
 import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
+import twitter4j.MediaEntity;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import xyz.klinker.android.drag_dismiss.DragDismissIntentBuilder;
@@ -491,6 +492,9 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public Button plus;
     public Button minus;
 
+    boolean replace;
+    boolean embeddedTweetFound;
+
     public void setUIElements(final View layout) {
 
         //findViewById(R.id.content_container).setPadding(0,0,0,0);
@@ -634,8 +638,8 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         nametv.setText(name);
         screennametv.setText("@" + screenName);
 
-        boolean replace = false;
-        boolean embeddedTweetFound = TweetView.isEmbeddedTweet(tweet);
+        replace = false;
+        embeddedTweetFound = TweetView.isEmbeddedTweet(tweet);
 
         if (settings.inlinePics && (tweet.contains("pic.twitter.com/") || embeddedTweetFound)) {
             if (tweet.lastIndexOf(".") == tweet.length() - 1) {
@@ -761,9 +765,13 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             double trust = event.getDouble("trustworthiness");
             eventId = event.getString("id");
             eventCCtv.setText("Trust: " + trust);
-            if (event.getString("image").equalsIgnoreCase(getMd5(tweet
-                    + event.getJSONObject("location").getInt("latitude")
-                    + event.getJSONObject("location").getInt("longitude")))) {
+
+            if (event.getString("image").equalsIgnoreCase((replace ?
+                    tweet.substring(0, tweet.length() - (embeddedTweetFound ? 33 : 25)).trim() :
+                    tweet)
+                    + screenName
+                    + time
+                    + webpage)) {
                 eventCCtv.setTextColor(Color.GREEN);
             } else {
                 eventCCtv.setTextColor(Color.RED);

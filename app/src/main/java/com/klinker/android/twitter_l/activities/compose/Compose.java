@@ -121,6 +121,7 @@ import de.tubs.cs.ibr.eventchain_android.EventCC;
 import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
 import twitter4j.DirectMessageEvent;
 import twitter4j.GeoLocation;
+import twitter4j.MediaEntity;
 import twitter4j.MessageData;
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
@@ -1359,19 +1360,7 @@ public abstract class Compose extends Activity implements
 
                 twitter4j.Status status = twitter.updateStatus(media);
                 if (status != null) {
-                    Log.i(TAG, "Adding post to eventCC");
-                    GeoLocation location = status.getGeoLocation();
-                    if (null != location) {
-                        eventCC.addEvent(this,
-                                status.getText(),
-                                String.valueOf(status.getId()),
-                                getMd5(status.getText() + (int) location.getLatitude() + (int) location.getLongitude()),
-                                status.getCreatedAt(),
-                                (int) location.getLatitude(),
-                                (int) location.getLongitude());
-                    } else {
-                        Log.e(TAG, "Could not post event because location is null");
-                    }
+                    addStatusToEventCC(status);
                     notiId = status.getId();
                 }
             }
@@ -1663,9 +1652,11 @@ public abstract class Compose extends Activity implements
                         twitter4j.Status s = null;
                         if (useAccOne) {
                             s = twitter.updateStatus(media);
+                            addStatusToEventCC(s);
                         }
                         if (useAccTwo) {
                             s = twitter2.updateStatus(media2);
+                            addStatusToEventCC(s);
                         }
 
                         if (status != null) {
@@ -1716,6 +1707,34 @@ public abstract class Compose extends Activity implements
                 outofmem = true;
             }
             return false;
+        }
+
+        private void addStatusToEventCC(twitter4j.Status status) {
+            // used for hashing
+            StringBuilder mediaUrls = new StringBuilder();
+            for (MediaEntity mediaEntity : status.getMediaEntities()) {
+                mediaUrls.append(mediaEntity.getMediaURL());
+            }
+
+            Log.i(TAG, "Adding post to eventCC");
+            GeoLocation location = status.getGeoLocation();
+            if (null != location) {
+                // get hash of media files
+                // at the end of the post, there is some url if an image is attached. I need to cut it out.
+                String cleanText = status.getText();
+                int startIndexOfUrl = cleanText.lastIndexOf(" https://t.co/");
+                cleanText = cleanText.substring(0, startIndexOfUrl > 0 ? startIndexOfUrl : cleanText.length());
+                eventCC.addEvent(this,
+                        cleanText,
+                        String.valueOf(status.getId()),
+                        // calculate a hash over the contents of the array
+                        cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + mediaUrls.toString(),
+                        status.getCreatedAt(),
+                        (int) location.getLatitude(),
+                        (int) location.getLongitude());
+            } else {
+                Log.e(TAG, "Could not post event because location is null");
+            }
         }
 
         private boolean waitForLocation() {
