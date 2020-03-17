@@ -15,20 +15,37 @@ package com.klinker.android.twitter_l.activities;
  * limitations under the License.
  */
 
+import android.Manifest;
 import android.app.ActivityOptions;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.viewpager.widget.ViewPager;
+
+import android.os.IBinder;
+import android.os.Looper;
 import android.transition.ChangeBounds;
 import android.util.Log;
 import android.view.*;
@@ -58,10 +75,36 @@ import com.klinker.android.twitter_l.utils.PermissionModelUtils;
 import com.klinker.android.twitter_l.utils.UpdateUtils;
 import com.klinker.android.twitter_l.utils.Utils;
 
+import org.json.JSONObject;
+
+import de.tubs.cs.ibr.eventchain_android.EventCC;
+import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
 import xyz.klinker.android.drag_dismiss.util.AndroidVersionUtils;
 
 
-public class MainActivity extends DrawerActivity {
+public class MainActivity extends DrawerActivity implements JsonObjectReceiver {
+
+    private String TAG = "MainActivity";
+    private FusedLocationProviderClient fusedLocationClient;
+    private LocationCallback locationCallback;
+    private EventCC eventCC;
+    private boolean boundService = false; // only send transactions to the EventCC if this flag is true
+    private ServiceConnection connection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className,
+                                       IBinder service) {
+            // We've bound to EventCC, cast the IBinder and get LocalService instance
+            EventCC.LocalBinder binder = (EventCC.LocalBinder) service;
+            eventCC = binder.getService();
+            boundService = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            boundService = false;
+        }
+    };
 
     public static boolean isPopup;
     public static Context sContext;
@@ -375,7 +418,47 @@ public class MainActivity extends DrawerActivity {
             mViewPager.setCurrentItem(getIntent().getIntExtra("page_to_open", 1));
         }
 
+        // location tracking for EventChain
+        checkPermissions();
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) {
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    Log.i(TAG, "Got location: " + location.toString());
+                    if (boundService) {
+                        eventCC.trackLocation(MainActivity.this, (int) location.getLongitude(), (int) location.getLatitude());
+                    }
+                }
+            }
+        };
+
         Log.v("talon_starting", "ending on create");
+    }
+
+    /**
+     * functions to acquire permissions for location tracking
+     */
+    private void checkPermissions() {
+        String[] permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.VIBRATE, Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_BACKGROUND_LOCATION};
+        for (String perm : permissions) {
+            if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, perm)) {
+                    Log.e(TAG, "Location permission need to be granted!");
+                }
+                ActivityCompat.requestPermissions(this, new String[]{perm}, 0);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        for (int i = 0; i < permissions.length; i++) {
+            Log.d(TAG, "Permission: " + permissions[i] + " = " + grantResults[i]);
+        }
     }
 
     public void setLauncherPage() {
@@ -451,33 +534,51 @@ public class MainActivity extends DrawerActivity {
             MainFragment currentFragment = (MainFragment) mSectionsPagerAdapter.getRealFrag(current);
             currentFragment.scrollDown();
         } catch (Exception e) {
-            
+
         }
+
+        startLocationUpdates();
+    }
+
+    /**
+     * gets location updates with "block" accuracy between every 10 to 60 minutes
+     */
+    private void startLocationUpdates() {
+        fusedLocationClient.requestLocationUpdates(new LocationRequest().setFastestInterval(600000).setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY).setInterval(3600000),
+                locationCallback,
+                Looper.getMainLooper());
     }
 
     @Override
     public void onDestroy() {
         try {
             HomeDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         try {
             MentionsDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         try {
             DMDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         try {
             ListDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         try {
             FollowersDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         try {
             FavoriteUsersDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         try {
             InteractionsDataSource.getInstance(context).close();
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
 
         super.onDestroy();
     }
@@ -487,6 +588,10 @@ public class MainActivity extends DrawerActivity {
     @Override
     public void onStart() {
         super.onStart();
+
+        // get the EventChain service
+        Intent intent = new Intent(this, EventCC.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
 
         MainActivity.isPopup = false;
 
@@ -501,7 +606,7 @@ public class MainActivity extends DrawerActivity {
                 (theme != settings.baseTheme)) {
 
             sharedPrefs.edit().putBoolean("launcher_frag_switch", false)
-                              .putBoolean("dont_refresh", true).apply();
+                    .putBoolean("dont_refresh", true).apply();
 
             AppSettings.invalidate();
 
@@ -519,7 +624,7 @@ public class MainActivity extends DrawerActivity {
             return;
         } else {
             sharedPrefs.edit().putBoolean("dont_refresh", false)
-                              .putBoolean("should_refresh", true).apply();
+                    .putBoolean("should_refresh", true).apply();
 
             MainActivity.caughtstarting = false;
         }
@@ -559,4 +664,11 @@ public class MainActivity extends DrawerActivity {
         return true;
     }
 
+    /**
+     * Callback for the location tracking. Just used for logging
+     */
+    @Override
+    public void display(JSONObject jsonObject) {
+        Log.i(TAG, "tracked location: \"" + jsonObject.toString() + "\"");
+    }
 }
