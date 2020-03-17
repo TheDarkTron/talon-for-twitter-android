@@ -1,4 +1,4 @@
-package com.klinker.android.twitter_l;
+package com.klinker.android.twitter_l.activities.tweet_viewer;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import com.klinker.android.twitter_l.R;
 
 import org.json.JSONArray;
 import org.json.JSONException;

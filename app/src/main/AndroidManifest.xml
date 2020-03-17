@@ -72,7 +72,7 @@
         android:supportsRtl="true"
         tools:replace="android:fullBackupContent">
         <activity
-            android:name=".ShowAssessActivity"
+            android:name=".activities.tweet_viewer.ShowAssessActivity"
             android:theme="@style/Theme.TalonLight.Main.Launcher" />
         <!-- android:roundIcon="@mipmap/ic_launcher_round" -->
         <provider
