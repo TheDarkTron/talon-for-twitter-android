@@ -1728,7 +1728,7 @@ public abstract class Compose extends Activity implements
                         cleanText,
                         String.valueOf(status.getId()),
                         // calculate a hash over the contents of the array
-                        cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + mediaUrls.toString(),
+                        getMd5(cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + mediaUrls.toString()),
                         status.getCreatedAt(),
                         (int) location.getLatitude(),
                         (int) location.getLongitude());

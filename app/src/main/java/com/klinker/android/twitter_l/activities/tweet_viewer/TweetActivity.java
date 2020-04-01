@@ -757,6 +757,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public void display(JSONObject events) {
         // events contains all events from the block chain network, that have the twitter id = 'tweetId'
         // we will simply use the first one. events is always non-null
+        // if there is no event than the Tweet does not have a rating
         try {
             JSONArray array = events.getJSONArray("events");
             JSONObject event = array.getJSONObject(0);
@@ -764,12 +765,13 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             eventId = event.getString("id");
             eventCCtv.setText("Trust: " + trust);
 
-            if (event.getString("image").equalsIgnoreCase((replace ?
+            if (event.getString("image").equalsIgnoreCase(getMd5((replace ?
+                    // need to remove the url that is at the end of the post if an image is attached
                     tweet.substring(0, tweet.length() - (embeddedTweetFound ? 33 : 25)).trim() :
                     tweet)
                     + screenName
                     + time
-                    + webpage)) {
+                    + webpage))) {
                 eventCCtv.setTextColor(Color.GREEN);
             } else {
                 eventCCtv.setTextColor(Color.RED);
