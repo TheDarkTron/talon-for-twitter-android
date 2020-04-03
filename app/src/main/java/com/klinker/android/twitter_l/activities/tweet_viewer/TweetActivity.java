@@ -1,5 +1,6 @@
 package com.klinker.android.twitter_l.activities.tweet_viewer;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -54,13 +55,19 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Locale;
 
 import androidx.cardview.widget.CardView;
@@ -69,8 +76,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import de.tubs.cs.ibr.eventchain_android.AssessReceiver;
 import de.tubs.cs.ibr.eventchain_android.EventCC;
 import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
+import twitter4j.MediaEntity;
 import twitter4j.Status;
 import twitter4j.Twitter;
+import twitter4j.TwitterException;
 import xyz.klinker.android.drag_dismiss.DragDismissIntentBuilder;
 import xyz.klinker.android.drag_dismiss.delegate.DragDismissDelegate;
 
@@ -183,6 +192,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public String gifVideo;
     public boolean isAConversation = false;
     public long videoDuration = -1;
+    private String medias;
 
     protected boolean fromLauncher = false;
     protected boolean fromNotification = false;
@@ -202,7 +212,6 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             EventCC.LocalBinder binder = (EventCC.LocalBinder) service;
             eventCC = binder.getService();
             boundService = true;
-            eventCC.queryEventsByDescription(TweetActivity.this, String.valueOf(tweetId));
         }
 
         @Override
@@ -216,6 +225,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         super.onStart();
         Intent intent = new Intent(this, EventCC.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
+        loadMediaEntities();
     }
 
     @Override
@@ -753,11 +763,64 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         }
     }
 
+    private void loadMediaEntities() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // load the images
+                // convert strings to urls
+                try {
+                    Status status = getTwitter().showStatus(tweetId);
+                    ByteArrayOutputStream response = new ByteArrayOutputStream();
+                    for (MediaEntity m : status.getMediaEntities()) {
+                        try {
+                            URL url = new URL(m.getMediaURLHttps());
+                            InputStream in = new BufferedInputStream(url.openStream());
+                            ByteArrayOutputStream out = new ByteArrayOutputStream();
+                            byte[] buf = new byte[1024];
+                            int n;
+                            while (-1 != (n = in.read(buf))) {
+                                out.write(buf, 0, n);
+                            }
+                            out.close();
+                            in.close();
+
+                            response.write(out.toByteArray());
+                        } catch (Exception ex) {
+                            Log.e(TAG, "Error loading media for Event Chain. Could not verify hash.");
+                            ex.printStackTrace();
+                            break;
+                        }
+                    }
+
+                    medias = new String(response.toByteArray());
+
+                } catch (TwitterException e) {
+                    Log.e(TAG, "Could not connect to twitter. Hash cannot be verified");
+                    e.printStackTrace();
+                }
+
+                for (int i = 0; !boundService; i++) { // wait for the eventCC to connect
+                    if (i > 10) { // stop after 10 seconds
+                        return;
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                    }
+                }
+
+                eventCC.queryEventsByDescription(TweetActivity.this, String.valueOf(tweetId));
+            }
+        }).start();
+    }
+
     @Override
     public void display(JSONObject events) {
         // events contains all events from the block chain network, that have the twitter id = 'tweetId'
         // we will simply use the first one. events is always non-null
         // if there is no event than the Tweet does not have a rating
+
         try {
             JSONArray array = events.getJSONArray("events");
             JSONObject event = array.getJSONObject(0);
@@ -771,7 +834,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
                     tweet)
                     + screenName
                     + time
-                    + webpage))) {
+                    + medias))) {
                 eventCCtv.setTextColor(Color.GREEN);
             } else {
                 eventCCtv.setTextColor(Color.RED);

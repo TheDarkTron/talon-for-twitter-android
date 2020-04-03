@@ -70,6 +70,7 @@ import com.google.android.gms.location.LocationServices;
 import com.klinker.android.twitter_l.R;
 import com.klinker.android.twitter_l.activities.GiphySearch;
 import com.klinker.android.twitter_l.activities.MainActivity;
+import com.klinker.android.twitter_l.activities.tweet_viewer.TweetActivity;
 import com.klinker.android.twitter_l.data.ThemeColor;
 import com.klinker.android.twitter_l.data.sq_lite.HashtagDataSource;
 import com.klinker.android.twitter_l.data.sq_lite.QueuedDataSource;
@@ -94,6 +95,8 @@ import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
 
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
@@ -103,6 +106,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.net.URI;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -123,6 +127,7 @@ import twitter4j.DirectMessageEvent;
 import twitter4j.GeoLocation;
 import twitter4j.MediaEntity;
 import twitter4j.MessageData;
+import twitter4j.Status;
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -1710,31 +1715,57 @@ public abstract class Compose extends Activity implements
         }
 
         private void addStatusToEventCC(twitter4j.Status status) {
-            // used for hashing
-            StringBuilder mediaUrls = new StringBuilder();
-            for (MediaEntity mediaEntity : status.getMediaEntities()) {
-                mediaUrls.append(mediaEntity.getMediaURL());
-            }
+            new Thread(new Runnable() {
+                String medias;
 
-            Log.i(TAG, "Adding post to eventCC");
-            GeoLocation location = status.getGeoLocation();
-            if (null != location) {
-                // get hash of media files
-                // at the end of the post, there is some url if an image is attached. I need to cut it out.
-                String cleanText = status.getText();
-                int startIndexOfUrl = cleanText.lastIndexOf(" https://t.co/");
-                cleanText = cleanText.substring(0, startIndexOfUrl > 0 ? startIndexOfUrl : cleanText.length());
-                eventCC.addEvent(this,
-                        cleanText,
-                        String.valueOf(status.getId()),
-                        // calculate a hash over the contents of the array
-                        getMd5(cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + mediaUrls.toString()),
-                        status.getCreatedAt(),
-                        (int) location.getLatitude(),
-                        (int) location.getLongitude());
-            } else {
-                Log.e(TAG, "Could not post event because location is null");
-            }
+                @Override
+                public void run() {
+                    // load the images
+                    // convert strings to urls
+                    ByteArrayOutputStream response = new ByteArrayOutputStream();
+                    for (MediaEntity m : status.getMediaEntities()) {
+                        try {
+                            URL url = new URL(m.getMediaURLHttps());
+                            InputStream in = new BufferedInputStream(url.openStream());
+                            ByteArrayOutputStream out = new ByteArrayOutputStream();
+                            byte[] buf = new byte[1024];
+                            int n;
+                            while (-1 != (n = in.read(buf))) {
+                                out.write(buf, 0, n);
+                            }
+                            out.close();
+                            in.close();
+
+                            response.write(out.toByteArray());
+                        } catch (Exception ex) {
+                            Log.e(TAG, "Error loading media for Event Chain. Could not verify hash.");
+                            ex.printStackTrace();
+                            break;
+                        }
+                    }
+
+                    medias = new String(response.toByteArray());
+
+                    GeoLocation location = status.getGeoLocation();
+                    if (null != location) {
+                        Log.i(TAG, "Adding post to eventCC");
+                        // at the end of the post, there is some url if an image is attached. I need to cut it out.
+                        String cleanText = status.getText();
+                        int startIndexOfUrl = cleanText.lastIndexOf(" https://t.co/");
+                        cleanText = cleanText.substring(0, startIndexOfUrl > 0 ? startIndexOfUrl : cleanText.length());
+                        eventCC.addEvent(UpdateTwitterStatus.this,
+                                cleanText,
+                                String.valueOf(status.getId()),
+                                // calculate a hash over the contents of the array
+                                getMd5(cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + medias),
+                                status.getCreatedAt(),
+                                (int) location.getLatitude(),
+                                (int) location.getLongitude());
+                    } else {
+                        Log.e(TAG, "Could not post event because location is null");
+                    }
+                }
+            }).start();
         }
 
         private boolean waitForLocation() {
