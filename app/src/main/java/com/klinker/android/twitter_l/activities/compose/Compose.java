@@ -70,7 +70,6 @@ import com.google.android.gms.location.LocationServices;
 import com.klinker.android.twitter_l.R;
 import com.klinker.android.twitter_l.activities.GiphySearch;
 import com.klinker.android.twitter_l.activities.MainActivity;
-import com.klinker.android.twitter_l.activities.tweet_viewer.TweetActivity;
 import com.klinker.android.twitter_l.data.ThemeColor;
 import com.klinker.android.twitter_l.data.sq_lite.HashtagDataSource;
 import com.klinker.android.twitter_l.data.sq_lite.QueuedDataSource;
@@ -127,7 +126,6 @@ import twitter4j.DirectMessageEvent;
 import twitter4j.GeoLocation;
 import twitter4j.MediaEntity;
 import twitter4j.MessageData;
-import twitter4j.Status;
 import twitter4j.StatusUpdate;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -1363,7 +1361,10 @@ public abstract class Compose extends Activity implements
                     }
                 }
 
+                // timer
+                Date startTime = new Date();
                 twitter4j.Status status = twitter.updateStatus(media);
+                Log.i(TAG, "Posting Tweet to Twitter took: " + (new Date().getTime() - startTime.getTime()) + "ms");
                 if (status != null) {
                     addStatusToEventCC(status);
                     notiId = status.getId();
@@ -1714,7 +1715,11 @@ public abstract class Compose extends Activity implements
             return false;
         }
 
+        private Date startTime;
         private void addStatusToEventCC(twitter4j.Status status) {
+            // start timer
+            startTime = new Date();
+
             new Thread(new Runnable() {
                 String medias;
 
@@ -1793,7 +1798,6 @@ public abstract class Compose extends Activity implements
             try {
                 stream.close();
             } catch (Throwable e) {
-                e.printStackTrace();
             }
 
             if (!tryingAgain) {
@@ -1811,7 +1815,11 @@ public abstract class Compose extends Activity implements
 
         @Override
         public void display(JSONObject event) {
+            // stop timer
+            Date stopTime = new Date();
+            long duration = stopTime.getTime() - startTime.getTime();
             Log.i(TAG, "Added event: " + event);
+            Log.i(TAG, "Duration for adding event: " + duration + "ms");
         }
 
 

@@ -1,6 +1,5 @@
 package com.klinker.android.twitter_l.activities.tweet_viewer;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
@@ -60,14 +59,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigInteger;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Date;
 import java.util.Locale;
 
 import androidx.cardview.widget.CardView;
@@ -220,8 +218,12 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         }
     };
 
+    private Date startTime;
+
     @Override
     protected void onStart() {
+        // start timer
+        startTime = new Date();
         super.onStart();
         Intent intent = new Intent(this, EventCC.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
@@ -842,6 +844,10 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         } catch (JSONException e) {
             Log.i(TAG, "No trust for this event");
         }
+
+        // stop timer
+        long duration = new Date().getTime() - startTime.getTime();
+        Log.i(TAG, "Read Event in: " + duration + "ms");
     }
 
     String getMd5(String input) {
@@ -871,6 +877,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         }
     }
 
+    private Date startAssessment;
     /**
      * assess event either positive or negative
      */
@@ -878,8 +885,10 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
     public void onClick(View view) {
         if (view.getId() == R.id.bt_asses_positive && boundService) {
             eventCC.assessEvent(this, eventId, 1, "", "");
+            startAssessment = new Date();
         } else if (view.getId() == R.id.bt_assess_negative && boundService) {
             eventCC.assessEvent(this, eventId, -1, "", "");
+            startAssessment = new Date();
         } else if (view.getId() == R.id.trust && eventId != null) {
             // start new activity with list of assessments
             Log.i(TAG, "showing assessments");
@@ -899,5 +908,9 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             Log.e(TAG, "Error getting trust from JSON: " + assessment);
             e.printStackTrace();
         }
+
+        // stop timer
+        long duration = new Date().getTime() - startAssessment.getTime();
+        Log.i(TAG, "Made Assessment in: " + duration + "ms");
     }
 }

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -52,8 +54,11 @@ public class ShowAssessActivity extends AppCompatActivity implements JsonObjectR
         }
     };
 
+    private Date startTime;
     @Override
     protected void onStart() {
+        // start timer
+        startTime = new Date();
         super.onStart();
         Intent intent = new Intent(this, EventCC.class);
         bindService(intent, connection, Context.BIND_AUTO_CREATE);
@@ -101,6 +106,9 @@ public class ShowAssessActivity extends AppCompatActivity implements JsonObjectR
             e.printStackTrace();
         }
 
+        // stop timer
+        long duration = new Date().getTime() - startTime.getTime();
+        Log.i(TAG, "Listed Assessments in: " + duration + "ms");
     }
 
     /**
