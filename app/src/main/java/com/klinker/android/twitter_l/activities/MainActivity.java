@@ -30,6 +30,16 @@ import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
+import android.transition.ChangeBounds;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.Menu;
+import android.view.View;
+import android.view.Window;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -37,22 +47,12 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.viewpager.widget.ViewPager;
-
-import android.os.IBinder;
-import android.os.Looper;
-import android.transition.ChangeBounds;
-import android.util.Log;
-import android.view.*;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-
 import com.klinker.android.twitter_l.R;
+import com.klinker.android.twitter_l.activities.compose.ComposeActivity;
+import com.klinker.android.twitter_l.activities.drawer_activities.DrawerActivity;
+import com.klinker.android.twitter_l.activities.main_fragments.MainFragment;
+import com.klinker.android.twitter_l.activities.setup.TutorialActivity;
+import com.klinker.android.twitter_l.activities.setup.material_login.MaterialLogin;
 import com.klinker.android.twitter_l.adapters.MainDrawerArrayAdapter;
 import com.klinker.android.twitter_l.adapters.TimelinePagerAdapter;
 import com.klinker.android.twitter_l.data.sq_lite.DMDataSource;
@@ -64,11 +64,6 @@ import com.klinker.android.twitter_l.data.sq_lite.ListDataSource;
 import com.klinker.android.twitter_l.data.sq_lite.MentionsDataSource;
 import com.klinker.android.twitter_l.services.SendScheduledTweet;
 import com.klinker.android.twitter_l.settings.AppSettings;
-import com.klinker.android.twitter_l.activities.compose.ComposeActivity;
-import com.klinker.android.twitter_l.activities.drawer_activities.DrawerActivity;
-import com.klinker.android.twitter_l.activities.main_fragments.MainFragment;
-import com.klinker.android.twitter_l.activities.setup.material_login.MaterialLogin;
-import com.klinker.android.twitter_l.activities.setup.TutorialActivity;
 import com.klinker.android.twitter_l.utils.LvlCheck;
 import com.klinker.android.twitter_l.utils.NotificationUtils;
 import com.klinker.android.twitter_l.utils.PermissionModelUtils;
@@ -77,12 +72,20 @@ import com.klinker.android.twitter_l.utils.Utils;
 
 import org.json.JSONObject;
 
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.viewpager.widget.ViewPager;
 import de.tubs.cs.ibr.eventchain_android.EventCC;
 import de.tubs.cs.ibr.eventchain_android.JsonObjectReceiver;
+import de.tubs.cs.ibr.location.TraceCollector;
+import de.tubs.cs.ibr.location.callbacks.SampleCallback;
+import de.tubs.cs.ibr.location.data.Memory;
+import de.tubs.cs.ibr.location.data.Sample;
 import xyz.klinker.android.drag_dismiss.util.AndroidVersionUtils;
 
 
-public class MainActivity extends DrawerActivity implements JsonObjectReceiver {
+public class MainActivity extends DrawerActivity implements JsonObjectReceiver, SampleCallback {
 
     private String TAG = "MainActivity";
     private FusedLocationProviderClient fusedLocationClient;
@@ -105,6 +108,8 @@ public class MainActivity extends DrawerActivity implements JsonObjectReceiver {
             boundService = false;
         }
     };
+    TraceCollector collector;
+
 
     public static boolean isPopup;
     public static Context sContext;
@@ -418,7 +423,8 @@ public class MainActivity extends DrawerActivity implements JsonObjectReceiver {
             mViewPager.setCurrentItem(getIntent().getIntExtra("page_to_open", 1));
         }
 
-        // location tracking for EventChain
+        // Although I use the IBR location library for location tracking I use the fusedLocationProvider
+        // to provoke a location update. Without this the location library would never send a location sample.
         checkPermissions();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
         locationCallback = new LocationCallback() {
@@ -427,14 +433,19 @@ public class MainActivity extends DrawerActivity implements JsonObjectReceiver {
                 if (locationResult == null) {
                     return;
                 }
-                for (Location location : locationResult.getLocations()) {
-                    Log.i(TAG, "Got location: " + location.toString());
-                    if (boundService) {
-                        eventCC.trackLocation(MainActivity.this, (int) location.getLongitude(), (int) location.getLatitude());
-                    }
-                }
+                // Location tracking is done now by location library
+//                for (Location location : locationResult.getLocations()) {
+//                    Log.i(TAG, "Got location: " + location.toString());
+//                    if (boundService) {
+//                        eventCC.trackLocation(MainActivity.this, (int) location.getLongitude(), (int) location.getLatitude());
+//                    }
+//                }
             }
         };
+
+        // Location tracking with location library
+        collector = new TraceCollector(this);
+        collector.registerSampleCallback(this);
 
         Log.v("talon_starting", "ending on create");
     }
@@ -665,10 +676,23 @@ public class MainActivity extends DrawerActivity implements JsonObjectReceiver {
     }
 
     /**
-     * Callback for the location tracking. Just used for logging
+     * Callback for the location tracking. Just do nothing with the returned location
      */
     @Override
     public void display(JSONObject jsonObject) {
-        Log.i(TAG, "tracked location: \"" + jsonObject.toString() + "\"");
+    }
+
+    /**
+     * Callback for location library. Reads the newest location  and sends it to the EventChain
+     * @param sample the sample provided by the location library. Contains readings of sensors.
+     */
+    @Override
+    public void consumeSample(Sample sample) {
+        Log.i(TAG, "Got sample: \"" + sample.toString() + "\"");
+        Memory<Location> memory = sample.getMemory(Location.class);
+        Location location = memory.getNewest();
+        if (boundService) {
+            eventCC.trackLocation(this, (int) location.getLongitude(), (int) location.getLatitude());
+        }
     }
 }
