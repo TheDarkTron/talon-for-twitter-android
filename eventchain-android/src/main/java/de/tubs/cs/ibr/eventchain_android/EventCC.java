@@ -105,6 +105,11 @@ public class EventCC extends Service {
      * The callback will receive: A JSONObject containing a JSONArray named "events" of all events in the BC
      */
     public void getAllEvents(JsonObjectReceiver receiver) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         GetAllEventsRequest request = new GetAllEventsRequest(contract, receiver);
         request.execute();
     }
@@ -140,6 +145,11 @@ public class EventCC extends Service {
      * @param longitude   longitude of event
      */
     public void addEvent(JsonObjectReceiver receiver, String title, String description, String image, Date timestamp, int latitude, int longitude) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         AddEventRequest request = new AddEventRequest(contract, receiver, title, description, image, timestamp, latitude, longitude);
         request.execute();
     }
@@ -151,6 +161,11 @@ public class EventCC extends Service {
      * @param query    couch db query
      */
     public void queryEvents(JsonObjectReceiver receiver, JSONObject query) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         QueryRequest request = new QueryRequest(contract, receiver, query);
         request.execute();
     }
@@ -162,6 +177,11 @@ public class EventCC extends Service {
      * @param description id of the twitter post
      */
     public void queryEventsByDescription(JsonObjectReceiver receiver, String description) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         try {
             JSONObject query = new JSONObject(
                     "{" +
@@ -178,16 +198,31 @@ public class EventCC extends Service {
     }
 
     public void assessEvent(AssessReceiver receiver, String eventId, int rating, String image, String description) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         AssessRequest request = new AssessRequest(contract, receiver, eventId, rating, image, description);
         request.execute();
     }
 
     public void trackLocation(JsonObjectReceiver receiver, int longitude, int latitude) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         TrackLocationRequest request = new TrackLocationRequest(contract, receiver, longitude, latitude);
         request.execute();
     }
 
     public void getFullEvent(JsonObjectReceiver receiver, String eventId) {
+        if (null == contract) {
+            Log.e(TAG, "not connected to EventChain");
+            return;
+        }
+
         GetFullEventRequest request = new GetFullEventRequest(contract, receiver, eventId);
         request.execute();
     }
