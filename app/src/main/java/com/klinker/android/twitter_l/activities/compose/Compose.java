@@ -1362,7 +1362,7 @@ public abstract class Compose extends Activity implements
                 }
 
                 // timer
-                Date startTime = new Date();
+                startTime = new Date();
                 twitter4j.Status status = twitter.updateStatus(media);
                 Log.i(TAG, "Posting Tweet to Twitter took: " + (new Date().getTime() - startTime.getTime()) + "ms");
                 if (status != null) {
@@ -1372,11 +1372,11 @@ public abstract class Compose extends Activity implements
             }
         }
 
-        String getMd5(String input) {
+        String getSha(String input) {
             try {
 
-                // Static getInstance method is called with hashing MD5
-                MessageDigest md = MessageDigest.getInstance("MD5");
+                // Static getInstance method is called with hashing
+                MessageDigest md = MessageDigest.getInstance("SHA-256");
 
                 // digest() method is called to calculate message digest
                 //  of an input digest() return array of byte
@@ -1717,9 +1717,6 @@ public abstract class Compose extends Activity implements
 
         private Date startTime;
         private void addStatusToEventCC(twitter4j.Status status) {
-            // start timer
-            startTime = new Date();
-
             new Thread(new Runnable() {
                 String medias;
 
@@ -1743,7 +1740,7 @@ public abstract class Compose extends Activity implements
 
                             response.write(out.toByteArray());
                         } catch (Exception ex) {
-                            Log.e(TAG, "Error loading media for Event Chain. Could not verify hash.");
+                            Log.e(TAG, "Error loading media for Event Chain. Can not verify hash.");
                             ex.printStackTrace();
                             break;
                         }
@@ -1762,7 +1759,7 @@ public abstract class Compose extends Activity implements
                                 cleanText,
                                 String.valueOf(status.getId()),
                                 // calculate a hash over the contents of the array
-                                getMd5(cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + medias),
+                                getSha(cleanText + status.getUser().getScreenName() + status.getCreatedAt().getTime() + medias),
                                 status.getCreatedAt(),
                                 (int) location.getLatitude(),
                                 (int) location.getLongitude());
@@ -1816,13 +1813,9 @@ public abstract class Compose extends Activity implements
         @Override
         public void display(JSONObject event) {
             // stop timer
-            Date stopTime = new Date();
-            long duration = stopTime.getTime() - startTime.getTime();
             Log.i(TAG, "Added event: " + event);
-            Log.i(TAG, "Duration for adding event: " + duration + "ms");
+            Log.i(TAG, "Duration for adding event: " + (new Date().getTime() - startTime.getTime()) + "ms");
         }
-
-
     }
 
     public Bitmap decodeSampledBitmapFromResourceMemOpt(

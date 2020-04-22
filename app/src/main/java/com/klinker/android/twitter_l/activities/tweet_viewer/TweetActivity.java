@@ -789,7 +789,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
 
                             response.write(out.toByteArray());
                         } catch (Exception ex) {
-                            Log.e(TAG, "Error loading media for Event Chain. Could not verify hash.");
+                            Log.e(TAG, "Error loading media for Event Chain. Can not verify hash.");
                             ex.printStackTrace();
                             break;
                         }
@@ -812,6 +812,9 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
                     }
                 }
 
+                // log time for loading tweet
+                Log.i(TAG, "Time for loading tweet from Twitter: " + (new Date().getTime() - startTime.getTime()));
+
                 eventCC.queryEventsByDescription(TweetActivity.this, String.valueOf(tweetId));
             }
         }).start();
@@ -830,7 +833,7 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
             eventId = event.getString("id");
             eventCCtv.setText("Trust: " + trust);
 
-            if (event.getString("image").equalsIgnoreCase(getMd5((replace ?
+            if (event.getString("image").equalsIgnoreCase(getSha((replace ?
                     // need to remove the url that is at the end of the post if an image is attached
                     tweet.substring(0, tweet.length() - (embeddedTweetFound ? 33 : 25)).trim() :
                     tweet)
@@ -850,11 +853,11 @@ public class TweetActivity extends PeekViewActivity implements DragDismissDelega
         Log.i(TAG, "Read Event in: " + duration + "ms");
     }
 
-    String getMd5(String input) {
+    String getSha(String input) {
         try {
 
             // Static getInstance method is called with hashing MD5
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
 
             // digest() method is called to calculate message digest
             //  of an input digest() return array of byte
