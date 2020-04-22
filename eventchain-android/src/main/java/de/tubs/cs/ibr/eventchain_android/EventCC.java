@@ -32,6 +32,9 @@ public class EventCC extends Service {
     private final String TAG = "EventCC";
     private final String CHANNEL = "mychannel";
     private final String CONTRACT = "eventcc";
+    private final String CONTRACT_SGX = "ecc";
+    private final String MSPID = "Org1MSP";
+    private final String MSPID_SGX = "SampleOrg";
     private Wallet wallet;
     private InputStream connectionConf;
     private Contract contract;
@@ -71,7 +74,7 @@ public class EventCC extends Service {
         InputStream key = assetManager.open("eventCC/key.pem");
 
         // create identity
-        Wallet.Identity identity = Wallet.Identity.createIdentity("Org1MSP", new InputStreamReader(cert), new InputStreamReader(key));
+        Wallet.Identity identity = Wallet.Identity.createIdentity(MSPID_SGX, new InputStreamReader(cert), new InputStreamReader(key));
 
         // read connection config
         connectionConf = assetManager.open("eventCC/connection.json");
@@ -95,7 +98,7 @@ public class EventCC extends Service {
 
         Gateway gateway = builder.connect();
         Network network = gateway.getNetwork(CHANNEL);
-        contract = network.getContract(CONTRACT);
+        contract = network.getContract(CONTRACT_SGX);
         Log.i(TAG, "Gateway connected to blockchain network");
     }
 

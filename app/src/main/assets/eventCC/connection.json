@@ -2,7 +2,7 @@
     "name": "basic-network",
     "version": "1.0.0",
     "client": {
-        "organization": "Org1",
+        "organization": "org1",
         "connection": {
             "timeout": {
                 "peer": {
@@ -23,8 +23,8 @@
         }
     },
     "organizations": {
-        "Org1": {
-            "mspid": "Org1MSP",
+        "org1": {
+            "mspid": "SampleOrg",
             "peers": [
                 "peer0.org1.example.com"
             ],

@@ -2,6 +2,16 @@
 
 Talon App extended with the EventChain system to detect Fake News.
 
+If you want to use the App with the SGX Chaincode you need to make some changes in EventCC.java. The Channel name and the mspid are different. Use the corresponding
+constants in the code
+
+```
+private final String CONTRACT = "eventcc";
+private final String CONTRACT_SGX = "ecc";
+private final String MSPID = "Org1MSP";
+private final String MSPID_SGX = "SampleOrg";
+```
+
 Original readme below:
 
 # Talon for Twitter
