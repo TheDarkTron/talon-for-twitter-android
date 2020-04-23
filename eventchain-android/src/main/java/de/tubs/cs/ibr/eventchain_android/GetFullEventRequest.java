@@ -27,8 +27,8 @@ public class GetFullEventRequest extends AsyncTask<Void, Void, JSONObject> {
     protected JSONObject doInBackground(Void... voids) {
         byte[] response = new byte[0];
         try {
-            response = contract.submitTransaction("getFullEvent", eventId);
-        } catch (ContractException | TimeoutException | InterruptedException e) {
+            response = contract.evaluateTransaction("getFullEvent", eventId);
+        } catch (ContractException e) {
             Log.e(TAG, "Error getting full event: \"" + eventId + "\"");
         }
 

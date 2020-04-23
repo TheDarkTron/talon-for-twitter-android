@@ -36,8 +36,8 @@ public class QueryRequest extends AsyncTask<Void, Void, JSONObject> {
     protected JSONObject doInBackground(Void... voids) {
         byte[] response = new byte[0];
         try {
-            response = contract.submitTransaction("queryEvents", query.toString());
-        } catch (ContractException | TimeoutException | InterruptedException e) {
+            response = contract.evaluateTransaction("queryEvents", query.toString());
+        } catch (ContractException e) {
             Log.e(TAG, "Error executing query request \"" + query.toString() + "\"");
         }
 
