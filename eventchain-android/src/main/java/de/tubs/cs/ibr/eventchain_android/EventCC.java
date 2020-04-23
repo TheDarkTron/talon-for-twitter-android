@@ -30,11 +30,16 @@ import androidx.annotation.Nullable;
  */
 public class EventCC extends Service {
     private final String TAG = "EventCC";
+
+    private final boolean SGX = false;
+
     private final String CHANNEL = "mychannel";
     private final String CONTRACT = "eventcc";
     private final String CONTRACT_SGX = "ecc";
     private final String MSPID = "Org1MSP";
     private final String MSPID_SGX = "SampleOrg";
+    private final String PATH = "eventCC/noSgx/";
+    private final String PATH_SGX = "eventCC/sgx/";
     private Wallet wallet;
     private InputStream connectionConf;
     private Contract contract;
@@ -69,15 +74,27 @@ public class EventCC extends Service {
     private void loadWalletAndConnection() throws IOException {
         AssetManager assetManager = this.getAssets();
 
-        // read certificate and key
-        InputStream cert = assetManager.open("eventCC/User1@org1.example.com-cert.pem");
-        InputStream key = assetManager.open("eventCC/key.pem");
+        Wallet.Identity identity;
+        if (SGX) {
+            // read certificate and key
+            InputStream cert = assetManager.open(PATH_SGX + "User1@org1.example.com-cert.pem");
+            InputStream key = assetManager.open(PATH_SGX + "key.pem");
 
-        // create identity
-        Wallet.Identity identity = Wallet.Identity.createIdentity(MSPID_SGX, new InputStreamReader(cert), new InputStreamReader(key));
+            // create identity
+            identity = Wallet.Identity.createIdentity(MSPID_SGX, new InputStreamReader(cert), new InputStreamReader(key));
 
-        // read connection config
-        connectionConf = assetManager.open("eventCC/connection.json");
+            // read connection config
+            connectionConf = assetManager.open(PATH_SGX + "connection.json");
+        } else {
+            InputStream cert = assetManager.open(PATH + "User1@org1.example.com-cert.pem");
+            InputStream key = assetManager.open(PATH + "key.pem");
+
+            // create identity
+            identity = Wallet.Identity.createIdentity(MSPID, new InputStreamReader(cert), new InputStreamReader(key));
+
+            // read connection config
+            connectionConf = assetManager.open(PATH + "connection.json");
+        }
 
         // create wallet
         wallet = Wallet.createInMemoryWallet();
@@ -98,7 +115,11 @@ public class EventCC extends Service {
 
         Gateway gateway = builder.connect();
         Network network = gateway.getNetwork(CHANNEL);
-        contract = network.getContract(CONTRACT_SGX);
+        if (SGX) {
+            contract = network.getContract(CONTRACT_SGX);
+        } else {
+            contract = network.getContract(CONTRACT);
+        }
         Log.i(TAG, "Gateway connected to blockchain network");
     }
 
@@ -200,6 +221,15 @@ public class EventCC extends Service {
         }
     }
 
+    /**
+     * Method to assess an Event
+     *
+     * @param receiver Callback
+     * @param eventId the ID of the Event to be rated (not the Tweet ID)
+     * @param rating Rating (-1 or +1)
+     * @param image A String representing the Path to an image resource
+     * @param description The Description of the assessment
+     */
     public void assessEvent(AssessReceiver receiver, String eventId, int rating, String image, String description) {
         if (null == contract) {
             Log.e(TAG, "not connected to EventChain");
@@ -210,6 +240,13 @@ public class EventCC extends Service {
         request.execute();
     }
 
+    /**
+     * Method for tracking the location of a user in the blockchain
+     *
+     * @param receiver Callback
+     * @param longitude Coordinate
+     * @param latitude Coordinate
+     */
     public void trackLocation(JsonObjectReceiver receiver, int longitude, int latitude) {
         if (null == contract) {
             Log.e(TAG, "not connected to EventChain");
@@ -220,6 +257,12 @@ public class EventCC extends Service {
         request.execute();
     }
 
+    /**
+     * Method for loading a full Event with all the assessments belonging to it
+     *
+     * @param receiver Callback
+     * @param eventId The ID of the Event to be loaded
+     */
     public void getFullEvent(JsonObjectReceiver receiver, String eventId) {
         if (null == contract) {
             Log.e(TAG, "not connected to EventChain");
