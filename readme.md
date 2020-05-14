@@ -2,15 +2,55 @@
 
 Talon App extended with the EventChain system to detect Fake News.
 
-If you want to use the App with the SGX Chaincode you need to make some changes in EventCC.java. The Channel name and the mspid are different. Use the corresponding
-constants in the code
+## How to run
+- Start the [EventChain](https://gitlab.ibr.cs.tu-bs.de/ds-media-blockchain/event-bc) on ssgx8
+- Check out the repository
+- Open the project in Android Studio
+- Follow the instructions below (section "Building Talon") You will need to generate new Twitter API Keys
+- Install the openVPN Client on your phone and connect to the [IBR VPN](https://www.ibr.cs.tu-bs.de/kb/openvpn.html)
+- Run the App on your phone
 
+If you aren't using an server in the IBR network you wont have to start the VPN.
+
+## How to use
+Check chapter 4.5 in the thesis "Integration einer Blockchain-Anwendung in die Social Media Plattform Twitter" for in-depth usage information.
+
+## Configuration
+You can find the configuration files for the Fabric SDK in  
+`talon-for-twitter-android⁩/⁨app⁩/⁨src⁩/⁨main⁩/⁨assets⁩/⁨eventCC⁩/⁨noSgx⁩` and  
+`talon-for-twitter-android⁩/⁨app⁩/⁨src⁩/⁨main⁩/⁨assets⁩/⁨eventCC⁩/⁨sgx⁩`  
+Everything is already properly configured if you are using the EventChain form the repository mentioned above and the IBR server ssgx8.ibr.cs.tu-bs.de. The noSgx/ folder contains the configuration for EventChain without SGX. The sgx/ folder contains the configuration for EventChain with SGX. Both folders contain the 3 files:
+
+- `connection.json`
+
+  Contains the network topology. If you want to connect to an EventChain network running on a different server you will have to change the `url`s of orderers, peers and certificateAuthorities.
+
+- `key.pem`
+
+  The private key of the Fabric user
+
+- `User1@org1.example.com-cert.pem`
+
+  The public key of the Fabric user
+
+### Fabric Keys
+Fabric is a permissioned blockchain. This means every user needs a unique key to gain access to the network. Yes, the identity of the user is hard coded for now. If you regenerate the keys for the network, you will also have to update this keys in the app. To do this copy the keys form these folders into the app:
+
+private: `go⁩/⁨src⁩/⁨gitlab.ibr.cs.tu-bs.de⁩/⁨ds-media-blockchain⁩/⁨event-bc⁩/⁨basic-network⁩/⁨crypto-config⁩/⁨peerOrganizations⁩/⁨org1.example.com⁩/⁨users⁩/⁨User1@org1.example.com⁩/⁨msp⁩/⁨keystore⁩/key.pem`  
+_The private key is sometimes called 8nq84957znq4nf89q0r8qpz34nt8pw3u4c8_sk. If this is the case, just rename it to key.pem. The content is the same_
+
+public: `go⁩/⁨src⁩/⁨gitlab.ibr.cs.tu-bs.de⁩/⁨ds-media-blockchain⁩/⁨event-bc⁩/⁨basic-network⁩/⁨crypto-config⁩/⁨peerOrganizations⁩/⁨org1.example.com⁩/⁨users⁩/⁨User1@org1.example.com⁩/⁨msp⁩/signcerts/User1@org1.example.com-cert.pem`
+
+### SGX
+You can change between sgx and non sgx mode with the flag
 ```
-private final String CONTRACT = "eventcc";
-private final String CONTRACT_SGX = "ecc";
-private final String MSPID = "Org1MSP";
-private final String MSPID_SGX = "SampleOrg";
+private final boolean SGX = false;
 ```
+in `talon-for-twitter-android⁩/⁨eventchain-android⁩/⁨src⁩/⁨main⁩/⁨java⁩/⁨de⁩/⁨tubs⁩/⁨cs⁩/⁨ibr⁩/⁨eventchain_android⁩/EventCC.java`. This is necessary because the Channel name and the mspid name are different in sgx and non sgx Chaincode. You will also have to install the SGX version of EventChain, which can be found [here](https://gitlab.ibr.cs.tu-bs.de/ds-media-blockchain/event-securechain).
+
+### Running EventChain in a local Docker container
+
+If you are running the EventChain locally you have to run the app in an Emulator. You have to change the Addresses in `connection.json` to `10.0.2.2`. This is the emulators loopback address to the host machine.
 
 Original readme below:
 
